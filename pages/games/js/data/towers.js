@@ -1,0 +1,75 @@
+export const TOWERS = {
+  earth: {
+    name: "Earth Tower",
+    cost: 85,
+    range: 140,
+    fireRate: 0.9,
+    damage: 16,
+    projectileSpeed: 260,
+    color: "#7ee081",
+    sprites: {
+      idle: ["assets/sprites/frames7/EarthTower2/frame_00.png"],
+      shoot: [
+        "assets/sprites/frames7/EarthTower2/frame_01.png",
+        "assets/sprites/frames7/EarthTower2/frame_02.png",
+        "assets/sprites/frames7/EarthTower2/frame_03.png",
+        "assets/sprites/frames7/EarthTower2/frame_04.png",
+      ],
+    },
+  },
+  fire: {
+    name: "Fire Tower",
+    cost: 75,
+    range: 120,
+    fireRate: 0.5,
+    damage: 10,
+    projectileSpeed: 280,
+    color: "#ff9f6b",
+    sprites: {
+      idle: ["assets/sprites/frames7/FireTower2/frame_00.png"],
+      shoot: [
+        "assets/sprites/frames7/FireTower2/frame_01.png",
+        "assets/sprites/frames7/FireTower2/frame_02.png",
+        "assets/sprites/frames7/FireTower2/frame_03.png",
+        "assets/sprites/frames7/FireTower2/frame_04.png",
+      ],
+    },
+  },
+  ice: {
+    name: "Ice Tower",
+    cost: 95,
+    range: 140,
+    fireRate: 0.9,
+    damage: 8,
+    slow: 0.5,
+    projectileSpeed: 240,
+    color: "#a6d5ff",
+    sprites: {
+      idle: ["assets/sprites/frames7/IceTower2/frame_00.png"],
+      shoot: [
+        "assets/sprites/frames7/IceTower2/frame_01.png",
+        "assets/sprites/frames7/IceTower2/frame_02.png",
+        "assets/sprites/frames7/IceTower2/frame_03.png",
+        "assets/sprites/frames7/IceTower2/frame_04.png",
+      ],
+    },
+  },
+  lightning: {
+    name: "Lightning Tower",
+    cost: 130,
+    range: 180,
+    fireRate: 1.2,
+    damage: 32,
+    projectileSpeed: 320,
+    color: "#f7e36c",
+    sprites: {
+      idle: ["assets/sprites/frames7/LightningTower2/frame_00.png"],
+      shoot: [
+        "assets/sprites/frames7/LightningTower2/frame_01.png",
+        "assets/sprites/frames7/LightningTower2/frame_02.png",
+        "assets/sprites/frames7/LightningTower2/frame_03.png",
+        "assets/sprites/frames7/LightningTower2/frame_04.png",
+      ],
+    },
+  },
+};

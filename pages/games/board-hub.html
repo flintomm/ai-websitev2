@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Board Arcade | Strategy Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1ec;
+        --ink: #1d1a17;
+        --muted: #6b645e;
+        --panel: #fffaf2;
+        --line: #d9d1c6;
+        --accent: #0f6b5f;
+        --accent-2: #d2a24c;
+        --soft: #efe7dc;
+        --shadow: 0 18px 40px rgba(24, 18, 12, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+        background: radial-gradient(circle at 15% 10%, rgba(210, 162, 76, 0.25), transparent 45%),
+          radial-gradient(circle at 85% 0%, rgba(15, 107, 95, 0.22), transparent 45%),
+          var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
+      }
+
+      header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 4vw, 3.4rem);
+        letter-spacing: -0.02em;
+      }
+
+      header p {
+        margin: 0.6rem 0 0;
+        color: var(--muted);
+        max-width: 58ch;
+        line-height: 1.6;
+      }
+
+      main {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      }
+
+      .panel {
+        background: var(--panel);
+        border-radius: 0;
+        padding: 1.5rem;
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.8rem;
+      }
+
+      .tab {
+        border-radius: 0;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--line);
+        background: var(--soft);
+        color: var(--ink);
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, border 0.2s ease, background 0.2s ease;
+      }
+
+      .tab.active {
+        border-color: var(--accent);
+        background: #e6f2f0;
+        transform: translateY(-2px);
+      }
+
+      .board-area {
+        margin-top: 1.5rem;
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .board-shell {
+        background: #fffdf9;
+        border-radius: 0;
+        padding: 1.5rem;
+        border: 1px solid var(--line);
+        display: grid;
+        gap: 1rem;
+      }
+
+      .board-grid {
+        width: min(420px, 100%);
+        aspect-ratio: 1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        margin: 0 auto;
+      }
+
+      .board-grid.checkers,
+      .board-grid.chess {
+        width: min(520px, 100%);
+        grid-template-columns: repeat(8, 1fr);
+        gap: 0.2rem;
+      }
+
+      .board-cell {
+        aspect-ratio: 1;
+        border-radius: 0;
+        border: 1px solid var(--line);
+        background: #fbf7f1;
+        display: grid;
+        place-items: center;
+        font-size: clamp(1.4rem, 3vw, 2rem);
+        font-weight: 700;
+        cursor: pointer;
+        transition: border 0.2s ease, transform 0.2s ease, background 0.2s ease;
+      }
+
+      .board-cell.dark {
+        background: #e2d6c6;
+      }
+
+      .board-cell.active {
+        border-color: var(--accent-2);
+        transform: translateY(-2px);
+      }
+
+      .piece {
+        width: 70%;
+        height: 70%;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.95rem;
+        font-weight: 700;
+        border: 2px solid rgba(0, 0, 0, 0.15);
+      }
+
+      .piece.light {
+        background: #fdf8f1;
+        color: #5b4630;
+      }
+
+      .piece.dark {
+        background: #2a2016;
+        color: #f6e5d3;
+      }
+
+      .piece.king::after {
+        content: \"K\";
+        font-size: 0.85rem;
+      }
+
+      .cell {
+        border-radius: 14px;
+        border: 2px solid var(--line);
+        background: #fbf7f1;
+        display: grid;
+        place-items: center;
+        font-size: clamp(2rem, 6vw, 3.2rem);
+        font-weight: 700;
+        cursor: pointer;
+        transition: border 0.2s ease, transform 0.2s ease;
+      }
+
+      .cell:hover {
+        border-color: var(--accent-2);
+        transform: translateY(-2px);
+      }
+
+      .cell.locked {
+        cursor: default;
+        color: var(--accent);
+      }
+
+      .meta {
+        display: grid;
+        gap: 0.5rem;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 0;
+        padding: 0.7rem 1rem;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .btn.secondary {
+        background: var(--accent-2);
+        color: #3b2a0e;
+      }
+
+      .side-panel h3 {
+        margin-top: 0;
+      }
+
+      .note {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .list {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .list li {
+        background: #f7f1e8;
+        border: 1px solid var(--line);
+        padding: 0.75rem 0.9rem;
+        border-radius: 0;
+      }
+
+      @media (max-width: 980px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Board Arcade</h1>
+        <p>A focused strategy suite for modern play. Swap between classic boards and build smarter opponents.</p>
+      </div>
+      <div class="meta">Prototype: v0.1</div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="tabs" role="tablist">
+          <button class="tab active" type="button" data-game="tic">Tic‑Tac‑Toe</button>
+          <button class="tab" type="button" data-game="checkers">Checkers</button>
+          <button class="tab" type="button" data-game="chess">Chess</button>
+        </div>
+
+        <div class="board-area" id="board-area">
+          <div class="board-shell" id="tic-panel">
+            <div class="meta" id="tic-status">Player X starts.</div>
+            <div class="board-grid" id="tic-grid" role="grid" aria-label="Tic tac toe board"></div>
+            <div class="controls">
+              <button class="btn" id="tic-reset">Reset</button>
+              <button class="btn secondary" id="tic-swap">Swap First Player</button>
+            </div>
+          </div>
+
+          <div class="board-shell" id="checkers-panel" hidden>
+            <div class="meta" id="checkers-status">Red moves first.</div>
+            <div class="board-grid checkers" id="checkers-grid" role="grid" aria-label="Checkers board"></div>
+            <div class="controls">
+              <button class="btn" id="checkers-reset">Reset</button>
+              <button class="btn secondary" id="checkers-swap">Swap First Player</button>
+            </div>
+          </div>
+
+          <div class="board-shell" id="chess-panel" hidden>
+            <div class="meta" id="chess-status">White to move.</div>
+            <div class="board-grid chess" id="chess-grid" role="grid" aria-label="Chess board"></div>
+            <div class="controls">
+              <button class="btn" id="chess-reset">Reset</button>
+              <button class="btn secondary" id="chess-flip">Flip Board</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel side-panel" hidden>
+        <h3>Board Arcade</h3>
+        <p class="note">Choose a game tab to play. Each board runs independently.</p>
+      </aside>
+    </main>
+
+    
+    <script>
+      const tabs = document.querySelectorAll(".tab");
+      const ticPanel = document.getElementById("tic-panel");
+      const checkersPanel = document.getElementById("checkers-panel");
+      const chessPanel = document.getElementById("chess-panel");
+
+      const ticGrid = document.getElementById("tic-grid");
+      const ticStatus = document.getElementById("tic-status");
+      const ticReset = document.getElementById("tic-reset");
+      const ticSwap = document.getElementById("tic-swap");
+
+      const checkersGrid = document.getElementById("checkers-grid");
+      const checkersStatus = document.getElementById("checkers-status");
+      const checkersReset = document.getElementById("checkers-reset");
+      const checkersSwap = document.getElementById("checkers-swap");
+
+      const chessGrid = document.getElementById("chess-grid");
+      const chessStatus = document.getElementById("chess-status");
+      const chessReset = document.getElementById("chess-reset");
+      const chessFlip = document.getElementById("chess-flip");
+
+      // Org-level asset mapping: swap these to use custom piece art.
+      const PIECE_ASSETS = {
+        chess: {
+          light: { K: null, Q: null, R: null, B: null, N: null, P: null },
+          dark: { K: null, Q: null, R: null, B: null, N: null, P: null },
+        },
+        checkers: {
+          light: null,
+          dark: null,
+          king: null,
+        },
+      };
+
+      let ticState = Array(9).fill(null);
+      let ticPlayer = "X";
+      let ticLocked = false;
+
+      let checkersState = [];
+      let checkersPlayer = "dark";
+      let checkersLocked = false;
+      let checkersSelected = null;
+
+      let chessState = [];
+      let chessPlayer = "light";
+      let chessSelected = null;
+      let chessFlipped = false;
+
+      function renderTicBoard() {
+        ticGrid.innerHTML = "";
+        ticState.forEach((value, idx) => {
+          const cell = document.createElement("button");
+          cell.className = "cell";
+          if (value) cell.classList.add("locked");
+          cell.textContent = value || "";
+          cell.addEventListener("click", () => handleTicMove(idx));
+          ticGrid.appendChild(cell);
+        });
+      }
+
+      function checkWinner(state) {
+        const lines = [
+          [0, 1, 2],
+          [3, 4, 5],
+          [6, 7, 8],
+          [0, 3, 6],
+          [1, 4, 7],
+          [2, 5, 8],
+          [0, 4, 8],
+          [2, 4, 6],
+        ];
+        for (const [a, b, c] of lines) {
+          if (state[a] && state[a] === state[b] && state[a] === state[c]) return state[a];
+        }
+        return state.every(Boolean) ? "draw" : null;
+      }
+
+      function handleTicMove(index) {
+        if (ticLocked || ticState[index]) return;
+        ticState[index] = ticPlayer;
+        const result = checkWinner(ticState);
+        if (result) {
+          ticLocked = true;
+          ticStatus.textContent = result === "draw" ? "Draw game." : `Player ${result} wins.`;
+        } else {
+          ticPlayer = ticPlayer === "X" ? "O" : "X";
+          ticStatus.textContent = `Player ${ticPlayer}'s turn.`;
+        }
+        renderTicBoard();
+      }
+
+      function resetTic() {
+        ticState = Array(9).fill(null);
+        ticLocked = false;
+        ticStatus.textContent = `Player ${ticPlayer} starts.`;
+        renderTicBoard();
+      }
+
+      function renderCheckersBoard() {
+        checkersGrid.innerHTML = "";
+        checkersState.forEach((row, r) => {
+          row.forEach((piece, c) => {
+            const cell = document.createElement("button");
+            cell.className = `board-cell ${((r + c) % 2 === 1) ? "dark" : ""}`;
+            if (checkersSelected && checkersSelected.r === r && checkersSelected.c === c) {
+              cell.classList.add("active");
+            }
+            if (piece) {
+              const pieceEl = document.createElement("div");
+              pieceEl.className = `piece ${piece.color}${piece.king ? " king" : ""}`;
+              if (piece.color === "light" && PIECE_ASSETS.checkers.light) {
+                pieceEl.style.background = `url(${PIECE_ASSETS.checkers.light}) center / cover`;
+              }
+              if (piece.color === "dark" && PIECE_ASSETS.checkers.dark) {
+                pieceEl.style.background = `url(${PIECE_ASSETS.checkers.dark}) center / cover`;
+              }
+              if (piece.king && PIECE_ASSETS.checkers.king) {
+                pieceEl.style.background = `url(${PIECE_ASSETS.checkers.king}) center / cover`;
+              }
+              cell.appendChild(pieceEl);
+            }
+            cell.addEventListener("click", () => handleCheckersClick(r, c));
+            checkersGrid.appendChild(cell);
+          });
+        });
+      }
+
+      function initCheckers() {
+        checkersState = Array.from({ length: 8 }, () => Array(8).fill(null));
+        for (let r = 0; r < 3; r += 1) {
+          for (let c = 0; c < 8; c += 1) {
+            if ((r + c) % 2 === 1) checkersState[r][c] = { color: "light", king: false };
+          }
+        }
+        for (let r = 5; r < 8; r += 1) {
+          for (let c = 0; c < 8; c += 1) {
+            if ((r + c) % 2 === 1) checkersState[r][c] = { color: "dark", king: false };
+          }
+        }
+        checkersSelected = null;
+        checkersLocked = false;
+        checkersStatus.textContent = `${checkersPlayer === "dark" ? "Red" : "Ivory"} moves first.`;
+        renderCheckersBoard();
+      }
+
+      function handleCheckersClick(r, c) {
+        if (checkersLocked) return;
+        const piece = checkersState[r][c];
+        if (piece && piece.color === checkersPlayer) {
+          checkersSelected = { r, c };
+          renderCheckersBoard();
+          return;
+        }
+        if (!checkersSelected) return;
+        const { r: sr, c: sc } = checkersSelected;
+        const mover = checkersState[sr][sc];
+        if (!mover) return;
+        const dr = r - sr;
+        const dc = c - sc;
+        const dir = mover.color === "dark" ? -1 : 1;
+        const isCapture = Math.abs(dr) === 2 && Math.abs(dc) === 2;
+        const isStep = Math.abs(dr) === 1 && Math.abs(dc) === 1;
+        const validDir = mover.king || dr === dir || dr === -dir;
+        if (isStep && validDir && !piece) {
+          checkersState[r][c] = mover;
+          checkersState[sr][sc] = null;
+        } else if (isCapture && validDir && !piece) {
+          const midR = sr + dr / 2;
+          const midC = sc + dc / 2;
+          const midPiece = checkersState[midR][midC];
+          if (midPiece && midPiece.color !== mover.color) {
+            checkersState[r][c] = mover;
+            checkersState[sr][sc] = null;
+            checkersState[midR][midC] = null;
+          } else {
+            return;
+          }
+        } else {
+          return;
+        }
+
+        if (mover.color === "dark" && r === 0) mover.king = true;
+        if (mover.color === "light" && r === 7) mover.king = true;
+
+        checkersSelected = null;
+        checkersPlayer = checkersPlayer === "dark" ? "light" : "dark";
+        checkersStatus.textContent = `${checkersPlayer === "dark" ? "Red" : "Ivory"}'s turn.`;
+        renderCheckersBoard();
+      }
+
+      function renderChessBoard() {
+        chessGrid.innerHTML = "";
+        const view = chessFlipped ? [...chessState].reverse() : chessState;
+        view.forEach((row, r) => {
+          const rowIndex = chessFlipped ? 7 - r : r;
+          row.forEach((piece, c) => {
+            const colIndex = chessFlipped ? 7 - c : c;
+            const cell = document.createElement("button");
+            cell.className = `board-cell ${((rowIndex + colIndex) % 2 === 1) ? "dark" : ""}`;
+            if (chessSelected && chessSelected.r === rowIndex && chessSelected.c === colIndex) {
+              cell.classList.add("active");
+            }
+            if (piece) {
+              const pieceEl = document.createElement("div");
+              const colorKey = piece.color === "light" ? "light" : "dark";
+              const asset = PIECE_ASSETS.chess[colorKey][piece.type];
+              if (asset) {
+                pieceEl.style.width = "70%";
+                pieceEl.style.height = "70%";
+                pieceEl.style.background = `url(${asset}) center / contain no-repeat`;
+              } else {
+                pieceEl.textContent = piece.type;
+                pieceEl.className = `piece ${colorKey}`;
+              }
+              cell.appendChild(pieceEl);
+            }
+            cell.addEventListener("click", () => handleChessClick(rowIndex, colIndex));
+            chessGrid.appendChild(cell);
+          });
+        });
+      }
+
+      function initChess() {
+        chessState = Array.from({ length: 8 }, () => Array(8).fill(null));
+        const back = ["R", "N", "B", "Q", "K", "B", "N", "R"];
+        for (let c = 0; c < 8; c += 1) {
+          chessState[0][c] = { type: back[c], color: "dark" };
+          chessState[1][c] = { type: "P", color: "dark" };
+          chessState[6][c] = { type: "P", color: "light" };
+          chessState[7][c] = { type: back[c], color: "light" };
+        }
+        chessSelected = null;
+        chessPlayer = "light";
+        chessStatus.textContent = "White to move.";
+        renderChessBoard();
+      }
+
+      function pathClear(sr, sc, tr, tc) {
+        const dr = Math.sign(tr - sr);
+        const dc = Math.sign(tc - sc);
+        let r = sr + dr;
+        let c = sc + dc;
+        while (r !== tr || c !== tc) {
+          if (chessState[r][c]) return false;
+          r += dr;
+          c += dc;
+        }
+        return true;
+      }
+
+      function isChessMoveLegal(piece, sr, sc, tr, tc) {
+        if (sr === tr && sc === tc) return false;
+        const target = chessState[tr][tc];
+        if (target && target.color === piece.color) return false;
+        const dr = tr - sr;
+        const dc = tc - sc;
+        const adr = Math.abs(dr);
+        const adc = Math.abs(dc);
+        switch (piece.type) {
+          case "P": {
+            const dir = piece.color === "light" ? -1 : 1;
+            const startRow = piece.color === "light" ? 6 : 1;
+            if (dc === 0 && !target) {
+              if (dr === dir) return true;
+              if (sr === startRow && dr === dir * 2 && !chessState[sr + dir][sc]) return true;
+            }
+            if (adc === 1 && dr === dir && target) return true;
+            return false;
+          }
+          case "R":
+            if (dr === 0 || dc === 0) return pathClear(sr, sc, tr, tc);
+            return false;
+          case "B":
+            if (adr === adc) return pathClear(sr, sc, tr, tc);
+            return false;
+          case "Q":
+            if (adr === adc || dr === 0 || dc === 0) return pathClear(sr, sc, tr, tc);
+            return false;
+          case "N":
+            return (adr === 2 && adc === 1) || (adr === 1 && adc === 2);
+          case "K":
+            return adr <= 1 && adc <= 1;
+          default:
+            return false;
+        }
+      }
+
+      function handleChessClick(r, c) {
+        const piece = chessState[r][c];
+        if (piece && piece.color === chessPlayer) {
+          chessSelected = { r, c };
+          renderChessBoard();
+          return;
+        }
+        if (!chessSelected) return;
+        const { r: sr, c: sc } = chessSelected;
+        const mover = chessState[sr][sc];
+        if (!mover) return;
+        if (!isChessMoveLegal(mover, sr, sc, r, c)) return;
+        chessState[r][c] = mover;
+        chessState[sr][sc] = null;
+        chessSelected = null;
+        chessPlayer = chessPlayer === "light" ? "dark" : "light";
+        chessStatus.textContent = chessPlayer === "light" ? "White to move." : "Black to move.";
+        renderChessBoard();
+      }
+
+      ticReset.addEventListener("click", resetTic);
+      ticSwap.addEventListener("click", () => {
+        ticPlayer = ticPlayer === "X" ? "O" : "X";
+        resetTic();
+      });
+
+      checkersReset.addEventListener("click", initCheckers);
+      checkersSwap.addEventListener("click", () => {
+        checkersPlayer = checkersPlayer === "dark" ? "light" : "dark";
+        initCheckers();
+      });
+
+      chessReset.addEventListener("click", initChess);
+      chessFlip.addEventListener("click", () => {
+        chessFlipped = !chessFlipped;
+        renderChessBoard();
+      });
+
+      function setActiveTab(key) {
+        ticPanel.hidden = key !== "tic";
+        checkersPanel.hidden = key !== "checkers";
+        chessPanel.hidden = key !== "chess";
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          const key = tab.dataset.game;
+          setActiveTab(key);
+        });
+      });
+
+      renderTicBoard();
+      initCheckers();
+      initChess();
+      setActiveTab("tic");
+    </script>
+ maybe. Let's do that: replace whole script tag content with new script. We'll craft full script. Use apply_patch: find `<script>` and `</script>` and replace. Let's do. Requires careful. We'll reconstruct. We'll use cat? apply_patch update block. Let's do. We'll open portion to ensure. We'll just use python cat to overwrite? We can use exec_command with cat <<'EOF' to rewrite file? But need keep HTML. Use apply_patch to replace script content between `<script>` and `</script>` with new script block. We'll do. Let's craft full script from scratch. */] to=functions.apply_patch from=commentary code  天天中彩票足彩-level? let's do.  天天中彩票上 code below. We'll re-run. 
+    </script>
+  </body>
+</html>

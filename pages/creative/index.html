@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Creative Stuff</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #0b1220;
+        --card: #121a2b;
+        --text: #f3f6ff;
+        --muted: #9aa4bf;
+        --accent: #ffb347;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        background: radial-gradient(circle at top, #1a2742 0%, #0b1220 45%);
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 2rem 1.5rem;
+      }
+
+      .card {
+        max-width: 620px;
+        width: 100%;
+        background: var(--card);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(2rem, 4vw, 2.6rem);
+      }
+
+      p {
+        margin: 0 0 1.5rem;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: var(--text);
+        line-height: 1.7;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(255, 179, 71, 0.12);
+        color: var(--accent);
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <span class="tag">Creative Stuff</span>
+      <h1>Creative labs are coming online.</h1>
+      <p>
+        This hub will hold AI movie trailers, music experiments, and comics. We will keep the format
+        light, visual, and easy to browse as more projects land.
+      </p>
+      <ul>
+        <li>AI Movie Trailers</li>
+        <li>AI Music</li>
+        <li>AI Comics</li>
+      </ul>
+    </main>
+  </body>
+</html>

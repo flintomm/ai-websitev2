@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Player Cap Architect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <header>
+      <p class="kicker">Player Roster & Payroll Simulator</p>
+      <h1>Roster Architect</h1>
+      <p>
+        Rebuild the league from scratch. Every player enters one draft pool with current annual salaries,
+        and each generated team is evaluated against cap, tax, apron, and repeater rules.
+      </p>
+    </header>
+
+    <main>
+      <section class="panel" id="setup-panel">
+        <div class="panel-title-row">
+          <h2>League Setup</h2>
+          <button id="reset-btn" class="btn secondary">Reset Session</button>
+        </div>
+
+        <div class="setup-steps" id="setup-steps">
+          <button class="step-btn active" type="button" data-setup-step="1">1. Player Data</button>
+          <button class="step-btn" type="button" data-setup-step="2">2. Salary Cap</button>
+          <button class="step-btn" type="button" data-setup-step="3">3. Select Team</button>
+          <button class="step-btn" type="button" data-setup-step="4">4. Start Mode</button>
+        </div>
+
+        <div class="setup-step" data-step="1">
+          <h3>1. Define Player Data</h3>
+          <p class="muted">Import a JSON/CSV file or generate a custom player pool.</p>
+          <div class="setup-grid" id="data-grid">
+            <label>
+              Import players (JSON or CSV)
+              <input id="player-file" type="file" accept=".json,.csv" />
+            </label>
+            <label>
+              Random player count
+              <input id="random-player-count" type="number" min="60" max="1500" value="500" />
+            </label>
+            <button id="randomize-players-btn" class="btn secondary" type="button">
+              Generate Random Pool
+            </button>
+          <p id="player-source-status" class="muted">Generated 500 random players/contracts.</p>
+          </div>
+          <div class="step-actions">
+            <span class="muted">Next: Salary cap parameters</span>
+            <button class="btn" type="button" data-step-action="next">Continue</button>
+          </div>
+        </div>
+
+        <div class="setup-step hidden" data-step="2">
+          <h3>2. Salary Cap Parameters</h3>
+          <p class="muted">Set roster size, repeater rules, and cap thresholds.</p>
+          <div class="setup-grid">
+            <label>
+              Roster spots per team
+              <input id="roster-size" type="number" min="5" max="15" value="10" />
+            </label>
+            <label>
+              Treat all teams as repeater taxpayers
+              <input id="repeater-mode" type="checkbox" />
+            </label>
+          </div>
+          <div class="rules-grid" id="rules-grid"></div>
+          <div class="step-actions">
+            <button class="btn secondary" type="button" data-step-action="prev">Back</button>
+            <button class="btn" type="button" data-step-action="next">Continue</button>
+          </div>
+        </div>
+
+        <div class="setup-step hidden" data-step="3">
+          <h3>3. Select Your Team</h3>
+          <p class="muted">Choose the franchise you will control during the build.</p>
+          <div class="setup-grid">
+            <label>
+              Pick your franchise
+              <select id="user-team"></select>
+            </label>
+          </div>
+          <div class="step-actions">
+            <button class="btn secondary" type="button" data-step-action="prev">Back</button>
+            <button class="btn" type="button" data-step-action="next">Continue</button>
+          </div>
+        </div>
+
+        <div class="setup-step hidden" data-step="4">
+          <h3>4. Start Build Mode</h3>
+          <p class="muted">Launch the draft or assign players manually.</p>
+          <div class="controls-row">
+            <button id="start-draft-btn" class="btn" type="button">Start Draft</button>
+            <button id="start-manual-btn" class="btn accent" type="button">Start Manual Assign</button>
+          </div>
+          <div class="step-actions">
+            <button class="btn secondary" type="button" data-step-action="prev">Back</button>
+            <span class="muted">You can pause/resume the draft after it begins.</span>
+          </div>
+        </div>
+
+        <div class="list hidden" id="locked-settings"></div>
+      </section>
+
+      <section class="panel" id="draft-panel">
+        <div class="panel-title-row">
+          <h2>Draft Board</h2>
+          <span id="draft-state-pill" class="pill neutral">Not started</span>
+        </div>
+
+        <div class="draft-status">
+          <p id="current-pick">Current pick: -</p>
+          <p id="pool-count">Free-agent pool: -</p>
+          <p id="last-pick">Last pick: -</p>
+        </div>
+
+        <div class="draft-grid">
+          <div>
+            <div id="manual-controls" class="hidden">
+              <label>
+                Assign selected players to
+                <select id="assign-team"></select>
+              </label>
+            </div>
+            <label>
+              Search player
+              <input id="player-search" type="text" placeholder="Name, position, team..." />
+            </label>
+            <div id="player-pool" class="list"></div>
+          </div>
+
+          <div>
+            <h3>Your picks</h3>
+            <div id="user-roster" class="list small"></div>
+          </div>
+
+          <div>
+            <h3>Pick log</h3>
+            <div id="pick-log" class="list small"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="results-panel">
+        <div class="panel-title-row">
+          <h2>Formed Teams & Cap Outcomes</h2>
+          <span class="pill" id="leader-caption">Sorted by total payroll + tax</span>
+        </div>
+        <div id="team-table-wrap"></div>
+      </section>
+
+      <section class="panel hidden" id="roster-panel">
+        <div class="panel-title-row">
+          <h2 id="roster-team-title">Current Roster</h2>
+          <button id="back-to-dashboard-btn" class="btn secondary">Back To Dashboard</button>
+        </div>
+        <div class="draft-status">
+          <p id="roster-meta-1">Team status: -</p>
+          <p id="roster-meta-2">Payroll: -</p>
+          <p id="roster-meta-3">Tax bill: -</p>
+        </div>
+        <div id="current-roster-list" class="list"></div>
+      </section>
+    </main>
+
+    <div id="on-clock-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="on-clock-title">
+      <div class="modal-card">
+        <h3 id="on-clock-title">You are on the clock</h3>
+        <p id="on-clock-copy">Your team is up. Make your pick.</p>
+        <button id="close-on-clock-modal" class="btn">Make Pick</button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

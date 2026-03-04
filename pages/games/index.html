@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Games | Tower Defense</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #120316;
+        --panel: rgba(24, 8, 38, 0.92);
+        --panel-2: rgba(19, 6, 30, 0.92);
+        --text: #fdf4ff;
+        --muted: #d1b6ff;
+        --accent: #ff4fd8;
+        --accent-2: #ffe45f;
+        --danger: #ff3b5b;
+        --good: #37f6ff;
+        --line: rgba(255, 255, 255, 0.18);
+        --glow: 0 0 16px rgba(255, 79, 216, 0.55);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        background: radial-gradient(circle at 15% 8%, rgba(255, 79, 216, 0.35) 0%, transparent 60%),
+          radial-gradient(circle at 85% 5%, rgba(55, 246, 255, 0.25) 0%, transparent 55%),
+          radial-gradient(circle at 50% 90%, rgba(255, 228, 95, 0.25) 0%, transparent 60%),
+          #120316;
+        color: var(--text);
+        min-height: 100vh;
+        padding: 2rem clamp(1.5rem, 4vw, 3rem);
+      }
+
+      header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 4.2vw, 3.2rem);
+        font-family: "Sora", sans-serif;
+      }
+
+      p {
+        margin: 0.4rem 0 0;
+        color: var(--muted);
+        max-width: 55ch;
+        line-height: 1.6;
+      }
+
+      main {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+      }
+
+      .panel {
+        background: var(--panel);
+        border-radius: 22px;
+        padding: 1.5rem;
+        border: 1px solid var(--line);
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55), var(--glow);
+      }
+
+      .game-wrap {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .arena {
+        position: relative;
+      }
+
+      #game {
+        width: 100%;
+        aspect-ratio: 960 / 712;
+        background: #15051b;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        display: block;
+      }
+
+      .scanlines {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        mix-blend-mode: screen;
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.03) 0px,
+          rgba(255, 255, 255, 0.03) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+        animation: scan 6s linear infinite;
+      }
+
+      .neon-flicker {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at 30% 20%, rgba(255, 79, 216, 0.25), transparent 55%),
+          radial-gradient(circle at 80% 30%, rgba(55, 246, 255, 0.18), transparent 55%);
+        animation: flicker 2.6s ease-in-out infinite;
+      }
+
+      .hud {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      }
+
+      .stat {
+        background: var(--panel-2);
+        border-radius: 14px;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--line);
+        font-weight: 600;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+      }
+
+      .stat span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .controls {
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .controls button {
+        padding: 0.85rem 1rem;
+        border-radius: 14px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        color: #1a041c;
+        background: linear-gradient(135deg, #ff4fd8, #ff89f4);
+        box-shadow: 0 10px 22px rgba(255, 79, 216, 0.35);
+      }
+
+      .controls button.secondary {
+        background: linear-gradient(135deg, #37f6ff, #8efbff);
+        color: #062430;
+        box-shadow: 0 10px 22px rgba(55, 246, 255, 0.35);
+      }
+
+      .controls button.warning {
+        background: linear-gradient(135deg, #ffe45f, #ffd06b);
+        color: #2f1a00;
+        box-shadow: 0 10px 22px rgba(255, 228, 95, 0.35);
+      }
+
+      .controls button.danger {
+        background: linear-gradient(135deg, #ff3b5b, #ff6a88);
+        color: #fff;
+        box-shadow: 0 10px 22px rgba(255, 59, 91, 0.35);
+      }
+
+      .tower-list {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .tower-card {
+        background: var(--panel-2);
+        border-radius: 14px;
+        padding: 0.8rem;
+        border: 1px solid var(--line);
+        display: grid;
+        gap: 0.35rem;
+        text-align: left;
+        font: inherit;
+        color: var(--text);
+        cursor: pointer;
+        transition: border 0.2s ease, transform 0.2s ease;
+      }
+
+      .tower-card span {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .tower-card.active {
+        border-color: rgba(255, 79, 216, 0.9);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 22px rgba(255, 79, 216, 0.25);
+      }
+
+      .tower-inspect {
+        margin-top: 1rem;
+        padding: 0.9rem;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(15, 23, 38, 0.7);
+      }
+
+      .hud-bar {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        right: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        justify-content: space-between;
+        align-items: center;
+        pointer-events: none;
+      }
+
+      .hud-group {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        background: rgba(12, 4, 20, 0.78);
+        border: 1px solid var(--line);
+        padding: 0.5rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        min-width: 86px;
+        align-items: center;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 0 12px rgba(55, 246, 255, 0.15);
+      }
+
+      .chip strong {
+        font-size: 1rem;
+      }
+
+      .chip.good strong {
+        color: var(--good);
+      }
+
+      .chip.warn strong {
+        color: var(--accent-2);
+      }
+
+      .chip.bad strong {
+        color: var(--danger);
+      }
+
+      .status-pill {
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(12, 4, 20, 0.85);
+        font-size: 0.8rem;
+        box-shadow: 0 0 12px rgba(255, 79, 216, 0.2);
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      .assets {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      code {
+        color: var(--accent);
+      }
+
+      @media (max-width: 980px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @keyframes scan {
+        0% { transform: translateY(0); opacity: 0.7; }
+        50% { opacity: 0.95; }
+        100% { transform: translateY(6px); opacity: 0.7; }
+      }
+
+      @keyframes flicker {
+        0%, 100% { opacity: 0.35; }
+        40% { opacity: 0.18; }
+        60% { opacity: 0.48; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Tower Defense Prototype</h1>
+        <p>Place towers, stop incoming waves, and keep the core alive. Click on the grid to place towers.</p>
+      </div>
+      <div class="note">Tip: Select a tower, then click on the map.</div>
+    </header>
+
+    <main>
+      <section class="panel game-wrap">
+        <div class="arena">
+          <canvas id="game" width="960" height="712" aria-label="Tower defense game canvas"></canvas>
+          <div class="scanlines"></div>
+          <div class="neon-flicker"></div>
+          <div class="hud-bar" aria-hidden="true">
+            <div class="hud-group">
+              <div class="chip good"><span>Credits</span><strong id="hud-credits">250</strong></div>
+              <div class="chip"><span>Wave</span><strong id="hud-wave">1</strong></div>
+              <div class="chip warn"><span>Enemies</span><strong id="hud-enemies">0</strong></div>
+              <div class="chip bad"><span>Lives</span><strong id="hud-lives">20</strong></div>
+            </div>
+            <div class="status-pill" id="hud-status">Build mode</div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <h2>Build Menu</h2>
+        <div class="tower-list" id="tower-list"></div>
+        <div class="tower-inspect" id="tower-inspect"></div>
+
+        <div class="controls" style="margin-top: 1rem;">
+          <button id="start-wave" class="warning">Start Next Wave</button>
+          <button id="toggle-pause" class="secondary">Pause</button>
+          <button id="reset-game" class="danger">Reset</button>
+        </div>
+
+      </aside>
+    </main>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
