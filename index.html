@@ -71,38 +71,42 @@
       transition: transform 0.1s linear;
     }
 
-    /* ===== PROGRESS DOTS (tick marks) ===== */
-    .progress-dots {
+    /* ===== NAV ANCHORS ===== */
+    .nav-anchors {
       position: fixed;
       right: 2rem;
       top: 50%;
       transform: translateY(-50%);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 1.2rem;
       z-index: 100;
+      align-items: flex-end;
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.4s ease;
     }
 
-    .progress-dots.visible { opacity: 1; }
-
-    .progress-dot {
-      width: 20px;
-      height: 1px;
-      background: rgba(255,255,255,0.2);
+    .nav-anchor {
+      background: transparent;
+      border: none;
       cursor: pointer;
-      transition: width 0.2s ease, background 0.2s ease;
+      font-family: var(--font);
+      font-size: 0.55rem;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      padding: 0.15rem 0;
+      transition: color 0.35s ease, font-size 0.35s ease, font-weight 0.35s ease, letter-spacing 0.35s ease;
+      text-align: right;
+      white-space: nowrap;
     }
 
-    .progress-dot:hover {
-      background: rgba(255,255,255,0.5);
-      width: 24px;
-    }
-
-    .progress-dot.active {
-      background: #fff;
-      width: 32px;
+    .nav-anchor.active {
+      color: rgba(255,255,255,0.85);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
     }
 
     /* ===== SCROLL CONTAINER ===== */
@@ -500,7 +504,7 @@
       .work-dropdown:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
       .work-dropdown:nth-child(n+3) { border-bottom: 1px solid var(--border); }
       .work-dropdown:last-child { border-bottom: none; }
-      .progress-dots { display: none; }
+      .nav-anchors { display: none; }
       .site-footer { flex-direction: column; align-items: flex-start; }
       .site-wordmark { padding: 1rem 1.5rem; }
       .section { padding: 8vh 5vw; }
@@ -523,7 +527,7 @@
       .hero-hi, .intro-text, .intro-sub, .showcase-title, .scroll-hint {
         opacity: 1 !important;
       }
-      .progress-dots, .scroll-hint { display: none !important; }
+      .nav-anchors, .scroll-hint { display: none !important; }
     </style>
   </noscript>
 </head>
@@ -539,12 +543,9 @@
   <div class="progress-bar" id="progressBar"></div>
 
   <!-- Progress dots -->
-  <nav class="progress-dots" id="progressDots" aria-label="Section navigation">
-    <div class="progress-dot active" data-section="0" title="Start"></div>
-    <div class="progress-dot" data-section="1" title="Hi"></div>
-    <div class="progress-dot" data-section="2" title="Who I Am"></div>
-    <div class="progress-dot" data-section="3" title="What We Build"></div>
-    <div class="progress-dot" data-section="4" title="Explore"></div>
+  <nav class="nav-anchors" id="navAnchors" aria-label="Page navigation">
+    <button class="nav-anchor" id="anchorHero">Start</button>
+    <button class="nav-anchor active" id="anchorWork">Work</button>
   </nav>
 
   <main class="scroll-container">
@@ -657,9 +658,10 @@
     const sections      = document.querySelectorAll('main [data-section]');
     const fadeElements  = document.querySelectorAll('.animate-on-scroll');
     const workDropdowns = document.querySelectorAll('.work-dropdown');
-    const dots          = document.querySelectorAll('.progress-dot');
     const progressBar   = document.getElementById('progressBar');
     const scrollHint    = document.getElementById('scrollHint');
+    const anchorHero    = document.getElementById('anchorHero');
+    const anchorWork    = document.getElementById('anchorWork');
     const heroVideo     = document.querySelector('.hero-video');
     const siteFrame       = document.getElementById('siteFrame');
     const siteFrameIframe = document.getElementById('siteFrameIframe');
@@ -708,7 +710,7 @@
       }
 
       setTimeout(() => {
-        document.getElementById('progressDots').classList.add('visible');
+        document.getElementById('navAnchors').style.opacity = '1';
       }, 700);
       setupObserver();
       setupNavigation();
@@ -822,12 +824,15 @@
       });
       currentSection = nearestIndex;
 
-      dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSection));
+      const nearBottom = currentSection >= 3;
+      anchorHero.classList.toggle('active', nearBottom);
+      anchorWork.classList.toggle('active', !nearBottom);
       scrollHint.classList.toggle('hidden', currentSection !== 0);
     }
 
     function setupNavigation() {
-      dots.forEach((dot, index) => dot.addEventListener('click', () => scrollToSection(index)));
+      anchorHero.addEventListener('click', () => scrollToSection(0));
+      anchorWork.addEventListener('click', () => scrollToSection(sections.length - 1));
 
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && videoExpanded) {

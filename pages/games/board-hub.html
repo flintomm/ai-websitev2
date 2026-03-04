@@ -24,9 +24,7 @@
         --shadow: 0 18px 40px rgba(24, 18, 12, 0.12);
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
       body {
         margin: 0;
@@ -36,7 +34,40 @@
           var(--bg);
         color: var(--ink);
         min-height: 100vh;
-        padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
+      }
+
+      /* ===== SITE NAV ===== */
+      .site-nav {
+        padding: 1.2rem clamp(1.5rem, 4vw, 3.5rem);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .back-link {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+
+      .back-link:hover { color: var(--accent); }
+
+      .site-tag {
+        font-size: 0.62rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 300;
+      }
+
+      /* ===== PAGE CONTENT ===== */
+      .page-wrap {
+        padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem) 2.5rem;
       }
 
       header {
@@ -69,15 +100,12 @@
 
       .panel {
         background: var(--panel);
-        border-radius: 0;
         padding: 1.5rem;
         border: 1px solid var(--line);
         box-shadow: var(--shadow);
       }
 
-      [hidden] {
-        display: none !important;
-      }
+      [hidden] { display: none !important; }
 
       .tabs {
         display: grid;
@@ -86,14 +114,14 @@
       }
 
       .tab {
-        border-radius: 0;
         padding: 0.75rem 1rem;
         border: 1px solid var(--line);
         background: var(--soft);
         color: var(--ink);
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
         font-weight: 700;
         cursor: pointer;
-        transition: transform 0.2s ease, border 0.2s ease, background 0.2s ease;
+        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
       }
 
       .tab.active {
@@ -110,7 +138,6 @@
 
       .board-shell {
         background: #fffdf9;
-        border-radius: 0;
         padding: 1.5rem;
         border: 1px solid var(--line);
         display: grid;
@@ -135,7 +162,6 @@
 
       .board-cell {
         aspect-ratio: 1;
-        border-radius: 0;
         border: 1px solid var(--line);
         background: #fbf7f1;
         display: grid;
@@ -143,17 +169,12 @@
         font-size: clamp(1.4rem, 3vw, 2rem);
         font-weight: 700;
         cursor: pointer;
-        transition: border 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
       }
 
-      .board-cell.dark {
-        background: #e2d6c6;
-      }
-
-      .board-cell.active {
-        border-color: var(--accent-2);
-        transform: translateY(-2px);
-      }
+      .board-cell.dark { background: #e2d6c6; }
+      .board-cell.active { border-color: var(--accent-2); transform: translateY(-2px); }
+      .board-cell.highlight { border-color: var(--accent); background: #d4ede9; }
 
       .piece {
         width: 70%;
@@ -162,26 +183,16 @@
         display: grid;
         place-items: center;
         font-family: "IBM Plex Mono", monospace;
-        font-size: 0.95rem;
+        font-size: 0.8rem;
         font-weight: 700;
         border: 2px solid rgba(0, 0, 0, 0.15);
       }
 
-      .piece.light {
-        background: #fdf8f1;
-        color: #5b4630;
-      }
+      .piece.light { background: #fdf8f1; color: #5b4630; }
+      .piece.dark  { background: #2a2016; color: #f6e5d3; }
+      .piece.king::after { content: "★"; font-size: 0.7rem; }
 
-      .piece.dark {
-        background: #2a2016;
-        color: #f6e5d3;
-      }
-
-      .piece.king::after {
-        content: \"K\";
-        font-size: 0.85rem;
-      }
-
+      /* Tic-tac-toe cells */
       .cell {
         border-radius: 14px;
         border: 2px solid var(--line);
@@ -191,18 +202,11 @@
         font-size: clamp(2rem, 6vw, 3.2rem);
         font-weight: 700;
         cursor: pointer;
-        transition: border 0.2s ease, transform 0.2s ease;
+        transition: border-color 0.2s ease, transform 0.2s ease;
       }
 
-      .cell:hover {
-        border-color: var(--accent-2);
-        transform: translateY(-2px);
-      }
-
-      .cell.locked {
-        cursor: default;
-        color: var(--accent);
-      }
+      .cell:hover:not(.locked) { border-color: var(--accent-2); transform: translateY(-2px); }
+      .cell.locked { cursor: default; color: var(--accent); }
 
       .meta {
         display: grid;
@@ -219,451 +223,514 @@
 
       .btn {
         border: none;
-        border-radius: 0;
         padding: 0.7rem 1rem;
         background: var(--accent);
         color: #fff;
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
         font-weight: 700;
         cursor: pointer;
+        transition: opacity 0.15s;
       }
+
+      .btn:hover { opacity: 0.85; }
 
       .btn.secondary {
         background: var(--accent-2);
         color: #3b2a0e;
       }
 
-      .side-panel h3 {
-        margin-top: 0;
-      }
-
-      .note {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
-      .list {
-        list-style: none;
-        padding: 0;
-        margin: 1rem 0 0;
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .list li {
-        background: #f7f1e8;
-        border: 1px solid var(--line);
-        padding: 0.75rem 0.9rem;
-        border-radius: 0;
-      }
-
       @media (max-width: 980px) {
-        main {
-          grid-template-columns: 1fr;
-        }
+        main { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <header>
-      <div>
-        <h1>Board Arcade</h1>
-        <p>A focused strategy suite for modern play. Swap between classic boards and build smarter opponents.</p>
-      </div>
-      <div class="meta">Prototype: v0.1</div>
-    </header>
+    <nav class="site-nav">
+      <a class="back-link" href="../../index.html#section-4">← Flint</a>
+      <span class="site-tag">Digital Games</span>
+    </nav>
 
-    <main>
-      <section class="panel">
-        <div class="tabs" role="tablist">
-          <button class="tab active" type="button" data-game="tic">Tic‑Tac‑Toe</button>
-          <button class="tab" type="button" data-game="checkers">Checkers</button>
-          <button class="tab" type="button" data-game="chess">Chess</button>
+    <div class="page-wrap">
+      <header>
+        <div>
+          <h1>Board Arcade</h1>
+          <p>A focused strategy suite for modern play. Swap between classic boards and build smarter opponents.</p>
         </div>
+        <div class="meta">Prototype: v0.2</div>
+      </header>
 
-        <div class="board-area" id="board-area">
-          <div class="board-shell" id="tic-panel">
-            <div class="meta" id="tic-status">Player X starts.</div>
-            <div class="board-grid" id="tic-grid" role="grid" aria-label="Tic tac toe board"></div>
-            <div class="controls">
-              <button class="btn" id="tic-reset">Reset</button>
-              <button class="btn secondary" id="tic-swap">Swap First Player</button>
-            </div>
+      <main>
+        <section class="panel">
+          <div class="tabs" role="tablist">
+            <button class="tab active" type="button" data-game="tic">Tic‑Tac‑Toe</button>
+            <button class="tab" type="button" data-game="checkers">Checkers</button>
+            <button class="tab" type="button" data-game="chess">Chess</button>
           </div>
 
-          <div class="board-shell" id="checkers-panel" hidden>
-            <div class="meta" id="checkers-status">Red moves first.</div>
-            <div class="board-grid checkers" id="checkers-grid" role="grid" aria-label="Checkers board"></div>
-            <div class="controls">
-              <button class="btn" id="checkers-reset">Reset</button>
-              <button class="btn secondary" id="checkers-swap">Swap First Player</button>
+          <div class="board-area" id="board-area">
+            <!-- Tic-Tac-Toe -->
+            <div class="board-shell" id="tic-panel">
+              <div class="meta" id="tic-status">Player X starts.</div>
+              <div class="board-grid" id="tic-grid" role="grid" aria-label="Tic tac toe board"></div>
+              <div class="controls">
+                <button class="btn" id="tic-reset">Reset</button>
+                <button class="btn secondary" id="tic-swap">Swap First Player</button>
+              </div>
+            </div>
+
+            <!-- Checkers -->
+            <div class="board-shell" id="checkers-panel" hidden>
+              <div class="meta" id="checkers-status">Red moves first.</div>
+              <div class="board-grid checkers" id="checkers-grid" role="grid" aria-label="Checkers board"></div>
+              <div class="controls">
+                <button class="btn" id="checkers-reset">Reset</button>
+                <button class="btn secondary" id="checkers-swap">Swap First Player</button>
+              </div>
+            </div>
+
+            <!-- Chess -->
+            <div class="board-shell" id="chess-panel" hidden>
+              <div class="meta" id="chess-status">White to move.</div>
+              <div class="board-grid chess" id="chess-grid" role="grid" aria-label="Chess board"></div>
+              <div class="controls">
+                <button class="btn" id="chess-reset">Reset</button>
+                <button class="btn secondary" id="chess-flip">Flip Board</button>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div class="board-shell" id="chess-panel" hidden>
-            <div class="meta" id="chess-status">White to move.</div>
-            <div class="board-grid chess" id="chess-grid" role="grid" aria-label="Chess board"></div>
-            <div class="controls">
-              <button class="btn" id="chess-reset">Reset</button>
-              <button class="btn secondary" id="chess-flip">Flip Board</button>
-            </div>
-          </div>
-        </div>
-      </section>
+        <aside class="panel" hidden>
+          <h3>Board Arcade</h3>
+          <p style="color:var(--muted);line-height:1.5">Choose a game tab to play. Each board runs independently.</p>
+        </aside>
+      </main>
+    </div>
 
-      <aside class="panel side-panel" hidden>
-        <h3>Board Arcade</h3>
-        <p class="note">Choose a game tab to play. Each board runs independently.</p>
-      </aside>
-    </main>
-
-    
     <script>
-      const tabs = document.querySelectorAll(".tab");
-      const ticPanel = document.getElementById("tic-panel");
-      const checkersPanel = document.getElementById("checkers-panel");
-      const chessPanel = document.getElementById("chess-panel");
+      // ─── Tab switching ───────────────────────────────────────────────────────
+      const tabs         = document.querySelectorAll('.tab');
+      const ticPanel     = document.getElementById('tic-panel');
+      const checkersPanel = document.getElementById('checkers-panel');
+      const chessPanel   = document.getElementById('chess-panel');
 
-      const ticGrid = document.getElementById("tic-grid");
-      const ticStatus = document.getElementById("tic-status");
-      const ticReset = document.getElementById("tic-reset");
-      const ticSwap = document.getElementById("tic-swap");
-
-      const checkersGrid = document.getElementById("checkers-grid");
-      const checkersStatus = document.getElementById("checkers-status");
-      const checkersReset = document.getElementById("checkers-reset");
-      const checkersSwap = document.getElementById("checkers-swap");
-
-      const chessGrid = document.getElementById("chess-grid");
-      const chessStatus = document.getElementById("chess-status");
-      const chessReset = document.getElementById("chess-reset");
-      const chessFlip = document.getElementById("chess-flip");
-
-      // Org-level asset mapping: swap these to use custom piece art.
-      const PIECE_ASSETS = {
-        chess: {
-          light: { K: null, Q: null, R: null, B: null, N: null, P: null },
-          dark: { K: null, Q: null, R: null, B: null, N: null, P: null },
-        },
-        checkers: {
-          light: null,
-          dark: null,
-          king: null,
-        },
-      };
-
-      let ticState = Array(9).fill(null);
-      let ticPlayer = "X";
-      let ticLocked = false;
-
-      let checkersState = [];
-      let checkersPlayer = "dark";
-      let checkersLocked = false;
-      let checkersSelected = null;
-
-      let chessState = [];
-      let chessPlayer = "light";
-      let chessSelected = null;
-      let chessFlipped = false;
-
-      function renderTicBoard() {
-        ticGrid.innerHTML = "";
-        ticState.forEach((value, idx) => {
-          const cell = document.createElement("button");
-          cell.className = "cell";
-          if (value) cell.classList.add("locked");
-          cell.textContent = value || "";
-          cell.addEventListener("click", () => handleTicMove(idx));
-          ticGrid.appendChild(cell);
-        });
+      function setActiveTab(key) {
+        ticPanel.hidden      = key !== 'tic';
+        checkersPanel.hidden = key !== 'checkers';
+        chessPanel.hidden    = key !== 'chess';
       }
 
-      function checkWinner(state) {
-        const lines = [
-          [0, 1, 2],
-          [3, 4, 5],
-          [6, 7, 8],
-          [0, 3, 6],
-          [1, 4, 7],
-          [2, 5, 8],
-          [0, 4, 8],
-          [2, 4, 6],
-        ];
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          setActiveTab(tab.dataset.game);
+        });
+      });
+
+      // ─── Tic-Tac-Toe ────────────────────────────────────────────────────────
+      const ticGrid   = document.getElementById('tic-grid');
+      const ticStatus = document.getElementById('tic-status');
+
+      let ticState  = Array(9).fill(null);
+      let ticPlayer = 'X';
+      let ticLocked = false;
+
+      function ticWinner(state) {
+        const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
         for (const [a, b, c] of lines) {
           if (state[a] && state[a] === state[b] && state[a] === state[c]) return state[a];
         }
-        return state.every(Boolean) ? "draw" : null;
+        return state.every(Boolean) ? 'draw' : null;
       }
 
-      function handleTicMove(index) {
-        if (ticLocked || ticState[index]) return;
-        ticState[index] = ticPlayer;
-        const result = checkWinner(ticState);
-        if (result) {
-          ticLocked = true;
-          ticStatus.textContent = result === "draw" ? "Draw game." : `Player ${result} wins.`;
-        } else {
-          ticPlayer = ticPlayer === "X" ? "O" : "X";
-          ticStatus.textContent = `Player ${ticPlayer}'s turn.`;
-        }
-        renderTicBoard();
+      function renderTic() {
+        ticGrid.innerHTML = '';
+        ticState.forEach((val, idx) => {
+          const cell = document.createElement('button');
+          cell.className = 'cell' + (val ? ' locked' : '');
+          cell.textContent = val || '';
+          cell.addEventListener('click', () => {
+            if (ticLocked || ticState[idx]) return;
+            ticState[idx] = ticPlayer;
+            const result = ticWinner(ticState);
+            if (result) {
+              ticLocked = true;
+              ticStatus.textContent = result === 'draw' ? 'Draw game.' : `Player ${result} wins!`;
+            } else {
+              ticPlayer = ticPlayer === 'X' ? 'O' : 'X';
+              ticStatus.textContent = `Player ${ticPlayer}'s turn.`;
+            }
+            renderTic();
+          });
+          ticGrid.appendChild(cell);
+        });
       }
 
       function resetTic() {
         ticState = Array(9).fill(null);
         ticLocked = false;
         ticStatus.textContent = `Player ${ticPlayer} starts.`;
-        renderTicBoard();
+        renderTic();
       }
 
-      function renderCheckersBoard() {
-        checkersGrid.innerHTML = "";
+      document.getElementById('tic-reset').addEventListener('click', resetTic);
+      document.getElementById('tic-swap').addEventListener('click', () => {
+        ticPlayer = ticPlayer === 'X' ? 'O' : 'X';
+        resetTic();
+      });
+
+      // ─── Checkers ───────────────────────────────────────────────────────────
+      const checkersGrid   = document.getElementById('checkers-grid');
+      const checkersStatus = document.getElementById('checkers-status');
+
+      let checkersState    = [];
+      let checkersPlayer   = 'dark';   // dark = Red, light = Ivory
+      let checkersLocked   = false;
+      let checkersSelected = null;
+      let checkersJumping  = null;     // { r, c } — piece mid-multi-jump
+
+      function checkersMoves(r, c, state) {
+        const piece = state[r][c];
+        if (!piece) return { steps: [], captures: [] };
+        const dirs = piece.king ? [-1, 1] : [piece.color === 'dark' ? -1 : 1];
+        const steps = [], captures = [];
+        dirs.forEach(dr => {
+          [-1, 1].forEach(dc => {
+            const nr = r + dr, nc = c + dc;
+            if (nr < 0 || nr > 7 || nc < 0 || nc > 7) return;
+            if (!state[nr][nc]) {
+              steps.push({ r: nr, c: nc });
+            } else {
+              const jr = r + 2 * dr, jc = c + 2 * dc;
+              if (jr < 0 || jr > 7 || jc < 0 || jc > 7) return;
+              if (state[nr][nc].color !== piece.color && !state[jr][jc]) {
+                captures.push({ r: jr, c: jc, mr: nr, mc: nc });
+              }
+            }
+          });
+        });
+        return { steps, captures };
+      }
+
+      function checkersHasCapture(color, state) {
+        for (let r = 0; r < 8; r++)
+          for (let c = 0; c < 8; c++) {
+            const p = state[r][c];
+            if (p && p.color === color && checkersMoves(r, c, state).captures.length > 0) return true;
+          }
+        return false;
+      }
+
+      function checkersCount(state) {
+        let dark = 0, light = 0;
+        state.forEach(row => row.forEach(p => { if (p) p.color === 'dark' ? dark++ : light++; }));
+        return { dark, light };
+      }
+
+      function renderCheckers() {
+        checkersGrid.innerHTML = '';
         checkersState.forEach((row, r) => {
           row.forEach((piece, c) => {
-            const cell = document.createElement("button");
-            cell.className = `board-cell ${((r + c) % 2 === 1) ? "dark" : ""}`;
-            if (checkersSelected && checkersSelected.r === r && checkersSelected.c === c) {
-              cell.classList.add("active");
-            }
+            const cell = document.createElement('button');
+            cell.className = 'board-cell' + ((r + c) % 2 === 1 ? ' dark' : '');
+            if (checkersSelected && checkersSelected.r === r && checkersSelected.c === c)
+              cell.classList.add('active');
             if (piece) {
-              const pieceEl = document.createElement("div");
-              pieceEl.className = `piece ${piece.color}${piece.king ? " king" : ""}`;
-              if (piece.color === "light" && PIECE_ASSETS.checkers.light) {
-                pieceEl.style.background = `url(${PIECE_ASSETS.checkers.light}) center / cover`;
-              }
-              if (piece.color === "dark" && PIECE_ASSETS.checkers.dark) {
-                pieceEl.style.background = `url(${PIECE_ASSETS.checkers.dark}) center / cover`;
-              }
-              if (piece.king && PIECE_ASSETS.checkers.king) {
-                pieceEl.style.background = `url(${PIECE_ASSETS.checkers.king}) center / cover`;
-              }
-              cell.appendChild(pieceEl);
+              const el = document.createElement('div');
+              el.className = `piece ${piece.color}${piece.king ? ' king' : ''}`;
+              cell.appendChild(el);
             }
-            cell.addEventListener("click", () => handleCheckersClick(r, c));
+            cell.addEventListener('click', () => handleCheckers(r, c));
             checkersGrid.appendChild(cell);
           });
         });
       }
 
-      function initCheckers() {
-        checkersState = Array.from({ length: 8 }, () => Array(8).fill(null));
-        for (let r = 0; r < 3; r += 1) {
-          for (let c = 0; c < 8; c += 1) {
-            if ((r + c) % 2 === 1) checkersState[r][c] = { color: "light", king: false };
-          }
-        }
-        for (let r = 5; r < 8; r += 1) {
-          for (let c = 0; c < 8; c += 1) {
-            if ((r + c) % 2 === 1) checkersState[r][c] = { color: "dark", king: false };
-          }
-        }
-        checkersSelected = null;
-        checkersLocked = false;
-        checkersStatus.textContent = `${checkersPlayer === "dark" ? "Red" : "Ivory"} moves first.`;
-        renderCheckersBoard();
-      }
+      function executeCheckers(sr, sc, tr, tc, mr, mc) {
+        const mover = { ...checkersState[sr][sc] };
+        checkersState[tr][tc] = mover;
+        checkersState[sr][sc] = null;
+        if (mr !== null) checkersState[mr][mc] = null;
 
-      function handleCheckersClick(r, c) {
-        if (checkersLocked) return;
-        const piece = checkersState[r][c];
-        if (piece && piece.color === checkersPlayer) {
-          checkersSelected = { r, c };
-          renderCheckersBoard();
-          return;
-        }
-        if (!checkersSelected) return;
-        const { r: sr, c: sc } = checkersSelected;
-        const mover = checkersState[sr][sc];
-        if (!mover) return;
-        const dr = r - sr;
-        const dc = c - sc;
-        const dir = mover.color === "dark" ? -1 : 1;
-        const isCapture = Math.abs(dr) === 2 && Math.abs(dc) === 2;
-        const isStep = Math.abs(dr) === 1 && Math.abs(dc) === 1;
-        const validDir = mover.king || dr === dir || dr === -dir;
-        if (isStep && validDir && !piece) {
-          checkersState[r][c] = mover;
-          checkersState[sr][sc] = null;
-        } else if (isCapture && validDir && !piece) {
-          const midR = sr + dr / 2;
-          const midC = sc + dc / 2;
-          const midPiece = checkersState[midR][midC];
-          if (midPiece && midPiece.color !== mover.color) {
-            checkersState[r][c] = mover;
-            checkersState[sr][sc] = null;
-            checkersState[midR][midC] = null;
-          } else {
+        // King promotion
+        if (mover.color === 'dark'  && tr === 0) mover.king = true;
+        if (mover.color === 'light' && tr === 7) mover.king = true;
+        checkersState[tr][tc] = mover;
+
+        // Win detection
+        const { dark, light } = checkersCount(checkersState);
+        if (dark === 0)  { checkersStatus.textContent = 'Ivory wins!'; checkersLocked = true; checkersJumping = null; checkersSelected = null; renderCheckers(); return; }
+        if (light === 0) { checkersStatus.textContent = 'Red wins!';   checkersLocked = true; checkersJumping = null; checkersSelected = null; renderCheckers(); return; }
+
+        // Multi-jump: if capture was made, check if same piece can jump again
+        if (mr !== null) {
+          const further = checkersMoves(tr, tc, checkersState).captures;
+          if (further.length > 0) {
+            checkersJumping  = { r: tr, c: tc };
+            checkersSelected = { r: tr, c: tc };
+            checkersStatus.textContent = 'Continue jumping!';
+            renderCheckers();
             return;
           }
-        } else {
+        }
+
+        checkersJumping  = null;
+        checkersSelected = null;
+        checkersPlayer = checkersPlayer === 'dark' ? 'light' : 'dark';
+        checkersStatus.textContent = `${checkersPlayer === 'dark' ? 'Red' : 'Ivory'}'s turn.`;
+        renderCheckers();
+      }
+
+      function handleCheckers(r, c) {
+        if (checkersLocked) return;
+        const piece = checkersState[r][c];
+        const mustCapture = checkersHasCapture(checkersPlayer, checkersState);
+
+        // Mid multi-jump: only the jumping piece may move
+        if (checkersJumping) {
+          if (r === checkersJumping.r && c === checkersJumping.c) return;
+          const jump = checkersMoves(checkersJumping.r, checkersJumping.c, checkersState).captures
+            .find(m => m.r === r && m.c === c);
+          if (jump) executeCheckers(checkersJumping.r, checkersJumping.c, r, c, jump.mr, jump.mc);
           return;
         }
 
-        if (mover.color === "dark" && r === 0) mover.king = true;
-        if (mover.color === "light" && r === 7) mover.king = true;
-
-        checkersSelected = null;
-        checkersPlayer = checkersPlayer === "dark" ? "light" : "dark";
-        checkersStatus.textContent = `${checkersPlayer === "dark" ? "Red" : "Ivory"}'s turn.`;
-        renderCheckersBoard();
-      }
-
-      function renderChessBoard() {
-        chessGrid.innerHTML = "";
-        const view = chessFlipped ? [...chessState].reverse() : chessState;
-        view.forEach((row, r) => {
-          const rowIndex = chessFlipped ? 7 - r : r;
-          row.forEach((piece, c) => {
-            const colIndex = chessFlipped ? 7 - c : c;
-            const cell = document.createElement("button");
-            cell.className = `board-cell ${((rowIndex + colIndex) % 2 === 1) ? "dark" : ""}`;
-            if (chessSelected && chessSelected.r === rowIndex && chessSelected.c === colIndex) {
-              cell.classList.add("active");
-            }
-            if (piece) {
-              const pieceEl = document.createElement("div");
-              const colorKey = piece.color === "light" ? "light" : "dark";
-              const asset = PIECE_ASSETS.chess[colorKey][piece.type];
-              if (asset) {
-                pieceEl.style.width = "70%";
-                pieceEl.style.height = "70%";
-                pieceEl.style.background = `url(${asset}) center / contain no-repeat`;
-              } else {
-                pieceEl.textContent = piece.type;
-                pieceEl.className = `piece ${colorKey}`;
-              }
-              cell.appendChild(pieceEl);
-            }
-            cell.addEventListener("click", () => handleChessClick(rowIndex, colIndex));
-            chessGrid.appendChild(cell);
-          });
-        });
-      }
-
-      function initChess() {
-        chessState = Array.from({ length: 8 }, () => Array(8).fill(null));
-        const back = ["R", "N", "B", "Q", "K", "B", "N", "R"];
-        for (let c = 0; c < 8; c += 1) {
-          chessState[0][c] = { type: back[c], color: "dark" };
-          chessState[1][c] = { type: "P", color: "dark" };
-          chessState[6][c] = { type: "P", color: "light" };
-          chessState[7][c] = { type: back[c], color: "light" };
+        // Select own piece
+        if (piece && piece.color === checkersPlayer) {
+          if (mustCapture && checkersMoves(r, c, checkersState).captures.length === 0) return;
+          checkersSelected = { r, c };
+          renderCheckers();
+          return;
         }
-        chessSelected = null;
-        chessPlayer = "light";
-        chessStatus.textContent = "White to move.";
-        renderChessBoard();
+
+        if (!checkersSelected) return;
+        const { r: sr, c: sc } = checkersSelected;
+        const { steps, captures } = checkersMoves(sr, sc, checkersState);
+
+        const capture = captures.find(m => m.r === r && m.c === c);
+        if (capture) { executeCheckers(sr, sc, r, c, capture.mr, capture.mc); return; }
+
+        const step = steps.find(m => m.r === r && m.c === c);
+        if (step && !mustCapture) { executeCheckers(sr, sc, r, c, null, null); return; }
+
+        // Click elsewhere — deselect or re-select
+        checkersSelected = null;
+        renderCheckers();
       }
 
-      function pathClear(sr, sc, tr, tc) {
-        const dr = Math.sign(tr - sr);
-        const dc = Math.sign(tc - sc);
-        let r = sr + dr;
-        let c = sc + dc;
+      function initCheckers() {
+        checkersState = Array.from({ length: 8 }, () => Array(8).fill(null));
+        for (let r = 0; r < 3; r++)
+          for (let c = 0; c < 8; c++)
+            if ((r + c) % 2 === 1) checkersState[r][c] = { color: 'light', king: false };
+        for (let r = 5; r < 8; r++)
+          for (let c = 0; c < 8; c++)
+            if ((r + c) % 2 === 1) checkersState[r][c] = { color: 'dark', king: false };
+        checkersSelected = null;
+        checkersJumping  = null;
+        checkersLocked   = false;
+        checkersStatus.textContent = `${checkersPlayer === 'dark' ? 'Red' : 'Ivory'} moves first.`;
+        renderCheckers();
+      }
+
+      document.getElementById('checkers-reset').addEventListener('click', initCheckers);
+      document.getElementById('checkers-swap').addEventListener('click', () => {
+        checkersPlayer = checkersPlayer === 'dark' ? 'light' : 'dark';
+        initCheckers();
+      });
+
+      // ─── Chess ──────────────────────────────────────────────────────────────
+      const chessGrid   = document.getElementById('chess-grid');
+      const chessStatus = document.getElementById('chess-status');
+
+      let chessState    = [];
+      let chessPlayer   = 'light';
+      let chessSelected = null;
+      let chessFlipped  = false;
+      let chessLocked   = false;
+
+      function pathClear(sr, sc, tr, tc, state) {
+        const dr = Math.sign(tr - sr), dc = Math.sign(tc - sc);
+        let r = sr + dr, c = sc + dc;
         while (r !== tr || c !== tc) {
-          if (chessState[r][c]) return false;
-          r += dr;
-          c += dc;
+          if (state[r][c]) return false;
+          r += dr; c += dc;
         }
         return true;
       }
 
-      function isChessMoveLegal(piece, sr, sc, tr, tc) {
+      function isLegal(piece, sr, sc, tr, tc, state) {
         if (sr === tr && sc === tc) return false;
-        const target = chessState[tr][tc];
+        const target = state[tr][tc];
         if (target && target.color === piece.color) return false;
-        const dr = tr - sr;
-        const dc = tc - sc;
-        const adr = Math.abs(dr);
-        const adc = Math.abs(dc);
+        const dr = tr - sr, dc = tc - sc;
+        const adr = Math.abs(dr), adc = Math.abs(dc);
         switch (piece.type) {
-          case "P": {
-            const dir = piece.color === "light" ? -1 : 1;
-            const startRow = piece.color === "light" ? 6 : 1;
+          case 'P': {
+            const dir      = piece.color === 'light' ? -1 : 1;
+            const startRow = piece.color === 'light' ? 6 : 1;
             if (dc === 0 && !target) {
               if (dr === dir) return true;
-              if (sr === startRow && dr === dir * 2 && !chessState[sr + dir][sc]) return true;
+              if (sr === startRow && dr === dir * 2 && !state[sr + dir][sc]) return true;
             }
-            if (adc === 1 && dr === dir && target) return true;
-            return false;
+            return adc === 1 && dr === dir && !!target;
           }
-          case "R":
-            if (dr === 0 || dc === 0) return pathClear(sr, sc, tr, tc);
-            return false;
-          case "B":
-            if (adr === adc) return pathClear(sr, sc, tr, tc);
-            return false;
-          case "Q":
-            if (adr === adc || dr === 0 || dc === 0) return pathClear(sr, sc, tr, tc);
-            return false;
-          case "N":
-            return (adr === 2 && adc === 1) || (adr === 1 && adc === 2);
-          case "K":
-            return adr <= 1 && adc <= 1;
-          default:
-            return false;
+          case 'R': return (dr === 0 || dc === 0) && pathClear(sr, sc, tr, tc, state);
+          case 'B': return adr === adc && pathClear(sr, sc, tr, tc, state);
+          case 'Q': return (adr === adc || dr === 0 || dc === 0) && pathClear(sr, sc, tr, tc, state);
+          case 'N': return (adr === 2 && adc === 1) || (adr === 1 && adc === 2);
+          case 'K': return adr <= 1 && adc <= 1;
+          default:  return false;
         }
       }
 
-      function handleChessClick(r, c) {
+      function findKing(color, state) {
+        for (let r = 0; r < 8; r++)
+          for (let c = 0; c < 8; c++) {
+            const p = state[r][c];
+            if (p && p.type === 'K' && p.color === color) return { r, c };
+          }
+        return null;
+      }
+
+      function inCheck(color, state) {
+        const king = findKing(color, state);
+        if (!king) return true;
+        const enemy = color === 'light' ? 'dark' : 'light';
+        for (let r = 0; r < 8; r++)
+          for (let c = 0; c < 8; c++) {
+            const p = state[r][c];
+            if (p && p.color === enemy && isLegal(p, r, c, king.r, king.c, state)) return true;
+          }
+        return false;
+      }
+
+      function hasLegalMoves(color, state) {
+        for (let sr = 0; sr < 8; sr++)
+          for (let sc = 0; sc < 8; sc++) {
+            const piece = state[sr][sc];
+            if (!piece || piece.color !== color) continue;
+            for (let tr = 0; tr < 8; tr++)
+              for (let tc = 0; tc < 8; tc++) {
+                if (!isLegal(piece, sr, sc, tr, tc, state)) continue;
+                const next = state.map(row => row.map(p => p ? { ...p } : null));
+                next[tr][tc] = next[sr][sc];
+                next[sr][sc] = null;
+                if (!inCheck(color, next)) return true;
+              }
+          }
+        return false;
+      }
+
+      function renderChess() {
+        chessGrid.innerHTML = '';
+        for (let dr = 0; dr < 8; dr++) {
+          for (let dc = 0; dc < 8; dc++) {
+            const realR = chessFlipped ? 7 - dr : dr;
+            const realC = chessFlipped ? 7 - dc : dc;
+            const piece = chessState[realR][realC];
+            const cell = document.createElement('button');
+            cell.className = 'board-cell' + ((realR + realC) % 2 === 1 ? ' dark' : '');
+            if (chessSelected && chessSelected.r === realR && chessSelected.c === realC)
+              cell.classList.add('active');
+            if (piece) {
+              const el = document.createElement('div');
+              el.className = `piece ${piece.color}`;
+              el.textContent = piece.type;
+              cell.appendChild(el);
+            }
+            cell.addEventListener('click', () => handleChess(realR, realC));
+            chessGrid.appendChild(cell);
+          }
+        }
+      }
+
+      function handleChess(r, c) {
+        if (chessLocked) return;
         const piece = chessState[r][c];
+
         if (piece && piece.color === chessPlayer) {
           chessSelected = { r, c };
-          renderChessBoard();
+          renderChess();
           return;
         }
+
         if (!chessSelected) return;
         const { r: sr, c: sc } = chessSelected;
         const mover = chessState[sr][sc];
-        if (!mover) return;
-        if (!isChessMoveLegal(mover, sr, sc, r, c)) return;
-        chessState[r][c] = mover;
-        chessState[sr][sc] = null;
+        if (!mover || !isLegal(mover, sr, sc, r, c, chessState)) {
+          chessSelected = null;
+          renderChess();
+          return;
+        }
+
+        // Simulate move
+        const next = chessState.map(row => row.map(p => p ? { ...p } : null));
+        next[r][c] = { ...mover };
+        next[sr][sc] = null;
+
+        // Pawn promotion → auto-queen
+        if (next[r][c].type === 'P' && (r === 0 || r === 7)) next[r][c].type = 'Q';
+
+        // Reject if own king left in check
+        if (inCheck(chessPlayer, next)) {
+          chessSelected = null;
+          renderChess();
+          return;
+        }
+
+        // Commit
+        chessState    = next;
         chessSelected = null;
-        chessPlayer = chessPlayer === "light" ? "dark" : "light";
-        chessStatus.textContent = chessPlayer === "light" ? "White to move." : "Black to move.";
-        renderChessBoard();
+        chessPlayer   = chessPlayer === 'light' ? 'dark' : 'light';
+
+        const colorName = chessPlayer === 'light' ? 'White' : 'Black';
+        const oppName   = chessPlayer === 'light' ? 'Black' : 'White';
+        const checked   = inCheck(chessPlayer, chessState);
+        const hasMoves  = hasLegalMoves(chessPlayer, chessState);
+
+        if (!hasMoves) {
+          chessLocked = true;
+          chessStatus.textContent = checked
+            ? `Checkmate — ${oppName} wins!`
+            : 'Stalemate — draw!';
+        } else {
+          chessStatus.textContent = checked
+            ? `${colorName} is in check!`
+            : `${colorName} to move.`;
+        }
+
+        renderChess();
       }
 
-      ticReset.addEventListener("click", resetTic);
-      ticSwap.addEventListener("click", () => {
-        ticPlayer = ticPlayer === "X" ? "O" : "X";
-        resetTic();
-      });
+      function initChess() {
+        chessState = Array.from({ length: 8 }, () => Array(8).fill(null));
+        const back = ['R','N','B','Q','K','B','N','R'];
+        for (let c = 0; c < 8; c++) {
+          chessState[0][c] = { type: back[c], color: 'dark' };
+          chessState[1][c] = { type: 'P',     color: 'dark' };
+          chessState[6][c] = { type: 'P',     color: 'light' };
+          chessState[7][c] = { type: back[c], color: 'light' };
+        }
+        chessSelected = null;
+        chessPlayer   = 'light';
+        chessLocked   = false;
+        chessStatus.textContent = 'White to move.';
+        renderChess();
+      }
 
-      checkersReset.addEventListener("click", initCheckers);
-      checkersSwap.addEventListener("click", () => {
-        checkersPlayer = checkersPlayer === "dark" ? "light" : "dark";
-        initCheckers();
-      });
-
-      chessReset.addEventListener("click", initChess);
-      chessFlip.addEventListener("click", () => {
+      document.getElementById('chess-reset').addEventListener('click', initChess);
+      document.getElementById('chess-flip').addEventListener('click', () => {
         chessFlipped = !chessFlipped;
-        renderChessBoard();
+        renderChess();
       });
 
-      function setActiveTab(key) {
-        ticPanel.hidden = key !== "tic";
-        checkersPanel.hidden = key !== "checkers";
-        chessPanel.hidden = key !== "chess";
-      }
-
-      tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-          tabs.forEach((t) => t.classList.remove("active"));
-          tab.classList.add("active");
-          const key = tab.dataset.game;
-          setActiveTab(key);
-        });
-      });
-
-      renderTicBoard();
+      // ─── Init ───────────────────────────────────────────────────────────────
+      renderTic();
       initCheckers();
       initChess();
-      setActiveTab("tic");
-    </script>
- maybe. Let's do that: replace whole script tag content with new script. We'll craft full script. Use apply_patch: find `<script>` and `</script>` and replace. Let's do. Requires careful. We'll reconstruct. We'll use cat? apply_patch update block. Let's do. We'll open portion to ensure. We'll just use python cat to overwrite? We can use exec_command with cat <<'EOF' to rewrite file? But need keep HTML. Use apply_patch to replace script content between `<script>` and `</script>` with new script block. We'll do. Let's craft full script from scratch. */] to=functions.apply_patch from=commentary code  天天中彩票足彩-level? let's do.  天天中彩票上 code below. We'll re-run. 
+      setActiveTab('tic');
     </script>
   </body>
 </html>
