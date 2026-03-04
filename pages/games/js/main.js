@@ -359,35 +359,56 @@ function drawTowers() {
       return;
     }
     const towerData = TOWERS[tower.type];
+    const half = grid.cell * 0.34;
+    ctx.save();
+    ctx.shadowColor = towerData.color;
+    ctx.shadowBlur = 18;
+    ctx.strokeStyle = towerData.color;
+    ctx.lineWidth = 2;
+    ctx.fillStyle = towerData.color + "18";
+    ctx.fillRect(pos.x - half, pos.y - half, half * 2, half * 2);
+    ctx.strokeRect(pos.x - half, pos.y - half, half * 2, half * 2);
+    ctx.shadowBlur = 0;
     ctx.fillStyle = towerData.color;
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 18, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.font = `bold ${Math.floor(half * 0.95)}px "IBM Plex Mono", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(towerData.name[0], pos.x, pos.y);
+    ctx.restore();
   });
 }
 
 function drawEnemies() {
   state.enemies.forEach((enemy) => {
+    ctx.save();
+    ctx.shadowColor = enemy.color;
+    ctx.shadowBlur = 20;
     ctx.fillStyle = enemy.color;
     ctx.beginPath();
-    ctx.arc(enemy.x, enemy.y, 13, 0, Math.PI * 2);
+    ctx.arc(enemy.x, enemy.y, 14, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 
-    const barWidth = 34;
+    const barW = 42, barH = 6;
     const ratio = clamp(enemy.hp / enemy.maxHp, 0, 1);
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(enemy.x - barWidth / 2, enemy.y - 24, barWidth, 5);
-    ctx.fillStyle = "#6ae3ff";
-    ctx.fillRect(enemy.x - barWidth / 2, enemy.y - 24, barWidth * ratio, 5);
+    const hpColor = ratio > 0.6 ? "#39ff14" : ratio > 0.3 ? "#f7c46c" : "#ff3399";
+    ctx.fillStyle = "rgba(0,0,0,0.75)";
+    ctx.fillRect(enemy.x - barW / 2, enemy.y - 28, barW, barH);
+    ctx.fillStyle = hpColor;
+    ctx.fillRect(enemy.x - barW / 2, enemy.y - 28, barW * ratio, barH);
   });
 }
 
 function drawProjectiles() {
   state.projectiles.forEach((shot) => {
+    ctx.save();
+    ctx.shadowColor = shot.color;
+    ctx.shadowBlur = 14;
     ctx.fillStyle = shot.color;
     ctx.beginPath();
-    ctx.arc(shot.x, shot.y, 4, 0, Math.PI * 2);
+    ctx.arc(shot.x, shot.y, 5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   });
 }
 
@@ -398,17 +419,26 @@ function drawPlacementGhost() {
   const pos = gridToPixel(cell.x, cell.y);
   const towerData = TOWERS[state.selectedTower];
   const valid = !isOnPath(cell) && !state.towers.some((t) => t.cell.x === cell.x && t.cell.y === cell.y);
-  ctx.strokeStyle = valid ? "rgba(126,224,129,0.9)" : "rgba(255,107,107,0.8)";
-  ctx.lineWidth = 2;
+  const color = valid ? "#39ff14" : "#ff3399";
+  ctx.save();
+  // Cell highlight
+  ctx.fillStyle = color + "18";
+  ctx.fillRect(pos.x - grid.cell / 2, pos.y - grid.cell / 2, grid.cell, grid.cell);
+  // Range ring (dashed)
+  ctx.strokeStyle = color + "88";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
   ctx.beginPath();
   ctx.arc(pos.x, pos.y, towerData.range, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
+  drawPath();
   drawGrid();
   drawPlacementGhost();
   drawTowers();
