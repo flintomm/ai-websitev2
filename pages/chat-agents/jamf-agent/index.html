@@ -482,25 +482,25 @@
 </head>
 <body>
   <nav class="site-nav">
-    <a class="back-link" href="../../../index.html#section-4">← Flint</a>
+    <a class="back-link" href="../../../index.html#section-4">< Flint</a>
     <span class="site-tag">Chat Agents</span>
   </nav>
   <main class="docs-shell">
     <header class="topbar">
-      <a class="back-link" href="../../../index.html#section-4">← Flint</a>
+      <a class="back-link" href="../../../index.html#section-4">< Flint</a>
       <span class="badge">Template Workspace</span>
     </header>
 
     <section class="hero">
       <h1>JAMF Agent</h1>
       <p>
-        An AI assistant trained on JAMF Pro documentation. Ask it anything — device enrollment, policy setup,
-        smart group logic, patch management. Use the chat window to get started.
+        A documentation assistant for JAMF Pro docs. Ask about device enrollment, policy setup,
+        smart group logic, and patch management. It searches indexed documentation, not live Jamf tenant policy data.
       </p>
     </section>
 
     <div class="tech-strip">
-      <span>RAG</span><span>Vector Search</span><span>Node.js</span><span>OpenAI API</span>
+      <span>RAG</span><span>Documentation Search</span><span>Node.js</span><span>LLM API</span>
     </div>
 
     <section class="docs-grid" aria-label="JAMF documentation templates">
@@ -560,8 +560,8 @@
     <header class="chat-head">
       <div class="chat-head-title">JAMF Agent</div>
       <div class="head-actions">
-        <button id="toggleSettings" class="icon-btn" type="button" title="Toggle settings">⚙</button>
-        <button id="toggleChat" class="icon-btn" type="button" title="Minimize chat">−</button>
+        <button id="toggleSettings" class="icon-btn" type="button" title="Toggle settings">S</button>
+        <button id="toggleChat" class="icon-btn" type="button" title="Minimize chat">-</button>
       </div>
     </header>
 
@@ -601,7 +601,7 @@
     </section>
 
     <div id="messages">
-      <div class="bubble assistant">Ask a JAMF question. I will try to fetch JAMF docs and respond with sources.</div>
+      <div class="bubble assistant">Ask a JAMF docs question. I fetch indexed documentation and respond with sources (not live tenant policy lookups).</div>
     </div>
 
     <form id="chatForm" class="composer">
@@ -609,7 +609,7 @@
         <textarea id="prompt" placeholder="Type your JAMF question..." required></textarea>
         <div class="template-row">
           <button class="template-btn" type="button" data-template="How do I enroll a new device?">Enroll a device</button>
-          <button class="template-btn" type="button" data-template="What's the password reset policy?">Password reset</button>
+          <button class="template-btn" type="button" data-template="What does Jamf documentation recommend for password reset policy setup?">Password reset</button>
           <button class="template-btn" type="button" data-template="How do I install approved software?">Install software</button>
           <button class="template-btn" type="button" data-template="What MDM profiles are applied to my Mac?">MDM profiles</button>
         </div>
@@ -654,7 +654,7 @@
       els.chatWidget.classList.toggle("minimized", !open);
       els.chatLauncher.textContent = open ? "Minimize JAMF Agent" : "Open JAMF Agent";
       els.chatLauncher.setAttribute("aria-expanded", String(open));
-      els.toggleChat.textContent = open ? "−" : "+";
+      els.toggleChat.textContent = open ? "-" : "+";
       els.toggleChat.title = open ? "Minimize chat" : "Maximize chat";
       if (open) {
         requestAnimationFrame(() => els.prompt.focus());
@@ -664,7 +664,7 @@
     function setSettingsOpen(open) {
       settingsOpen = open;
       els.settingsPanel.style.display = open ? "grid" : "none";
-      els.toggleSettings.textContent = open ? "⚙" : "⚙";
+      els.toggleSettings.textContent = open ? "S" : "S";
       els.toggleSettings.title = open ? "Hide settings" : "Show settings";
     }
 

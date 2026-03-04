@@ -318,22 +318,13 @@
       transition: background 0.15s ease, color 0.15s ease;
     }
 
-    .work-btn::after {
-      content: "↗";
-      font-size: 1rem;
-      font-weight: 300;
-      opacity: 0.25;
-      transition: opacity 0.15s ease;
-    }
+    .work-btn::after { content: ""; }
 
     .work-dropdown:hover .work-btn,
     .work-dropdown[open] .work-btn {
       background: rgba(0,0,0,0.06);
       color: #000;
     }
-
-    .work-dropdown:hover .work-btn::after,
-    .work-dropdown[open] .work-btn::after { opacity: 1; }
 
     .work-dropdown-menu {
       position: absolute;
@@ -363,7 +354,7 @@
     .work-dropdown-menu a:last-child { border-bottom: none; }
 
     .work-dropdown-menu a::after {
-      content: "→";
+      content: ">";
       opacity: 0.3;
       font-size: 0.85rem;
     }
@@ -556,7 +547,7 @@
           I'm <span class="intro-highlight">Flint</span>.
         </h2>
         <p class="intro-sub animate animate-on-scroll" id="sub1">
-          AI systems that feel intuitive — chatbots, games, dashboards, and tools built from scratch.
+          Chat agents, games, dashboards, and tools built from scratch.
         </p>
       </div>
     </section>
@@ -584,7 +575,7 @@
           <details class="work-dropdown">
             <summary class="work-btn">Chat Agents</summary>
             <div class="work-dropdown-menu">
-              <a href="pages/chat-agents/jamf-agent/index.html"><span class="work-item-main"><span>JAMF Agent</span><span class="work-desc">Helpdesk AI · policy lookup via vector search</span></span></a>
+              <a href="pages/chat-agents/jamf-agent/index.html"><span class="work-item-main"><span>JAMF Agent</span><span class="work-desc">Docs assistant · indexed Jamf documentation search</span></span></a>
             </div>
           </details>
 
@@ -605,16 +596,14 @@
           <details class="work-dropdown">
             <summary class="work-btn">Digital Games</summary>
             <div class="work-dropdown-menu">
-              <a href="pages/games/index.html"><span class="work-item-main"><span>Tower Defense</span><span class="work-desc">Canvas game · wave engine + pathfinding AI</span></span></a>
-              <a href="pages/games/board-hub.html"><span class="work-item-main"><span>Board Arcade</span><span class="work-desc">Chess, Checkers, Tic-Tac-Toe · minimax AI</span></span></a>
+              <a href="pages/games/index.html"><span class="work-item-main"><span>Tower Defense</span><span class="work-desc">Canvas game · wave engine + waypoint pathing</span></span></a>
+              <a href="pages/games/board-hub.html"><span class="work-item-main"><span>Board Arcade</span><span class="work-desc">Chess, Checkers, Tic-Tac-Toe · rules engine</span></span></a>
             </div>
           </details>
         </div>
 
-        <p class="hire-note">Open to AI roles and freelance work. <a href="mailto:flintcdrom@gmail.com">Let's talk →</a></p>
-
         <footer class="site-footer">
-          <p class="footer-copy">Tommy — AI engineer. Built with Flint.</p>
+          <p class="footer-copy">Built with Flint, Tommy's Trusty AI</p>
           <a class="linkedin-btn" href="https://www.linkedin.com/in/tphet" target="_blank" rel="noopener noreferrer nofollow external">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M19 3A2 2 0 0 1 21 5v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-9.5 6.44h-3v9h3v-9zM8 5.56a1.72 1.72 0 1 0 0 3.44 1.72 1.72 0 0 0 0-3.44zM18 12.27c0-2.66-1.42-3.9-3.3-3.9-1.52 0-2.2.84-2.58 1.43v-1.23h-3v9h3v-5.03c0-1.33.25-2.62 1.9-2.62 1.62 0 1.65 1.52 1.65 2.7v4.95h3v-5.3z"/>
@@ -630,7 +619,7 @@
   <!-- Site frame overlay -->
   <div class="site-frame" id="siteFrame">
     <nav class="frame-nav">
-      <button class="frame-back" id="frameBack">← Flint</button>
+      <button class="frame-back" id="frameBack">< Flint</button>
       <span class="frame-tag">Creative Corner</span>
     </nav>
     <iframe id="siteFrameIframe" src="" title="External site" allowfullscreen></iframe>
