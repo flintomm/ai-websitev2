@@ -636,6 +636,7 @@
   </div>
 
   <script>
+    const SCROLL_KEY = 'flint_home_scroll_y_v1';
     const sections      = document.querySelectorAll('main [data-section]');
     const fadeElements  = document.querySelectorAll('.animate-on-scroll');
     const workDropdowns = document.querySelectorAll('.work-dropdown');
@@ -653,6 +654,34 @@
     let videoExpanded  = false;
     let bgClickHandler = null;
 
+    function persistScrollPosition() {
+      sessionStorage.setItem(SCROLL_KEY, String(Math.round(window.scrollY)));
+    }
+
+    function restoreInitialScrollPosition() {
+      const scrollLimit = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+      const hash = window.location.hash;
+
+      if (hash) {
+        const target = document.querySelector(hash);
+        if (target) {
+          const y = Math.min(Math.max(target.offsetTop, 0), scrollLimit);
+          window.scrollTo(0, y);
+          targetScrollY = y;
+          return;
+        }
+      }
+
+      const navEntry = performance.getEntriesByType('navigation')[0];
+      const navType = navEntry ? navEntry.type : null;
+      const saved = sessionStorage.getItem(SCROLL_KEY);
+      if ((navType === 'back_forward' || navType === 'reload') && saved !== null) {
+        const y = Math.min(Math.max(Number(saved) || 0, 0), scrollLimit);
+        window.scrollTo(0, y);
+        targetScrollY = y;
+      }
+    }
+
     function openSiteFrame(url) {
       siteFrameIframe.src = url;
       siteFrame.classList.add('open');
@@ -664,6 +693,8 @@
     }
 
     function init() {
+      restoreInitialScrollPosition();
+
       // Fade in video when loaded
       if (heroVideo) {
         heroVideo.addEventListener('loadeddata', () => {
@@ -901,6 +932,9 @@
         ticking = true;
       }
     }, { passive: true });
+
+    window.addEventListener('pagehide', persistScrollPosition);
+    window.addEventListener('beforeunload', persistScrollPosition);
 
     init();
   </script>
