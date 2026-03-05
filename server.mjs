@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { createReadStream, statSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,7 +111,7 @@ function listAvailableModels(providers) {
 
 // ==================== RAG Functions ====================
 
-function loadRagIndexes() {
+async function loadRagIndexes() {
   const now = Date.now();
   if (ragIndexCache && ragChunksCache && (now - ragCacheTime) < RAG_CACHE_TTL_MS) {
     return { index: ragIndexCache, chunks: ragChunksCache };
@@ -403,7 +404,7 @@ function serveStatic(req, res) {
     res.writeHead(200, {
       "Content-Type": MIME[ext] || "application/octet-stream",
       "Cache-Control": "no-cache",
-      "X-Content-Type-Options", "nosniff",
+      "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer"
     });
     createReadStream(target).pipe(res);
