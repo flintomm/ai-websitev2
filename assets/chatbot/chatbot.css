@@ -1,0 +1,202 @@
+:root {
+  --cb-surface: #121212;
+  --cb-border: rgba(255, 255, 255, 0.18);
+  --cb-border-hi: rgba(255, 255, 255, 0.34);
+  --cb-text: #fff;
+  --cb-muted: rgba(255, 255, 255, 0.64);
+  --cb-accent: #39ff14;
+  --cb-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+}
+
+.flint-chat-launcher {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 980;
+  border: 1px solid var(--cb-border-hi);
+  background: #fff;
+  color: #000;
+  padding: 0.62rem 0.9rem;
+  font: 700 0.68rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--cb-shadow);
+}
+
+.flint-chat-launcher:hover,
+.flint-chat-launcher:focus-visible {
+  background: var(--cb-accent);
+  border-color: var(--cb-accent);
+  outline: none;
+}
+
+.flint-chat-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 4rem;
+  z-index: 981;
+  width: min(420px, calc(100vw - 2rem));
+  height: min(620px, calc(100vh - 6rem));
+  border: 1px solid var(--cb-border-hi);
+  background: var(--cb-surface);
+  color: var(--cb-text);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  box-shadow: var(--cb-shadow);
+}
+
+.flint-chat-panel[hidden] {
+  display: none;
+}
+
+.flint-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.68rem 0.72rem;
+  border-bottom: 1px solid var(--cb-border);
+}
+
+.flint-chat-title {
+  margin: 0;
+  font: 700 0.67rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.flint-chat-close {
+  border: 1px solid var(--cb-border);
+  background: transparent;
+  color: var(--cb-text);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.flint-chat-close:hover,
+.flint-chat-close:focus-visible {
+  border-color: var(--cb-border-hi);
+  outline: none;
+}
+
+.flint-chat-messages {
+  margin: 0;
+  padding: 0.72rem;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+  overflow: auto;
+  align-content: start;
+  background: #0a0a0a;
+}
+
+.flint-chat-bubble {
+  border: 1px solid var(--cb-border);
+  padding: 0.58rem 0.68rem;
+  font: 400 0.85rem/1.44 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  white-space: pre-wrap;
+}
+
+.flint-chat-bubble.user {
+  margin-left: 8%;
+  border-color: var(--cb-border-hi);
+  background: #171717;
+}
+
+.flint-chat-bubble.assistant {
+  margin-right: 8%;
+  background: #101010;
+}
+
+.flint-chat-status {
+  margin: 0;
+  padding: 0.45rem 0.72rem 0;
+  color: var(--cb-muted);
+  font: 400 0.73rem/1.3 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  min-height: 1.2em;
+}
+
+.flint-chat-status.error {
+  color: #ff7a7a;
+}
+
+.flint-chat-form {
+  border-top: 1px solid var(--cb-border);
+  padding: 0.62rem;
+  display: grid;
+  gap: 0.45rem;
+  background: #111;
+}
+
+.flint-chat-form label {
+  font: 700 0.61rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cb-muted);
+}
+
+.flint-chat-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.48rem;
+}
+
+.flint-chat-input {
+  width: 100%;
+  border: 1px solid var(--cb-border);
+  background: #fff;
+  color: #000;
+  padding: 0.58rem 0.62rem;
+  font: 400 0.86rem/1.3 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.flint-chat-input:focus-visible {
+  outline: none;
+  border-color: var(--cb-border-hi);
+}
+
+.flint-chat-send {
+  border: 1px solid var(--cb-border-hi);
+  background: #fff;
+  color: #000;
+  font: 700 0.66rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0 0.95rem;
+  cursor: pointer;
+}
+
+.flint-chat-send:hover,
+.flint-chat-send:focus-visible {
+  background: var(--cb-accent);
+  border-color: var(--cb-accent);
+  outline: none;
+}
+
+.flint-chat-send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .flint-chat-launcher {
+    right: 0.65rem;
+    bottom: 0.65rem;
+  }
+
+  .flint-chat-panel {
+    left: 0.65rem;
+    right: 0.65rem;
+    width: auto;
+    bottom: 3.3rem;
+    height: min(74vh, 560px);
+  }
+
+  .flint-chat-bubble.user,
+  .flint-chat-bubble.assistant {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

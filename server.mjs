@@ -1,33 +1,33 @@
 import { createServer } from "node:http";
-import { createReadStream, statSync, readFileSync, readdirSync, mkdirSync, existsSync } from "node:fs";
+import { createReadStream, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const PORT = Number.parseInt(process.env.PORT || "8080", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 const NODE_ENV = process.env.NODE_ENV || "development";
-const ALLOWED_ORIGINS = (process.env.SITE_CHAT_ALLOWED_ORIGINS || process.env.JAMF_AGENT_ALLOWED_ORIGINS || "")
+
+const ALLOWED_ORIGINS = (process.env.SITE_CHAT_ALLOWED_ORIGINS || "")
   .split(",")
   .map((v) => v.trim())
   .filter(Boolean);
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = Number.parseInt(process.env.SITE_CHAT_RATE_LIMIT_MAX || process.env.JAMF_AGENT_RATE_LIMIT_MAX || "30", 10);
-const rateLimitStore = new Map();
-const RAG_REMOTE_INDEX_URL = String(process.env.RAG_REMOTE_INDEX_URL || "").trim();
-const RAG_REMOTE_INDEX_BEARER = String(process.env.RAG_REMOTE_INDEX_BEARER || "").trim();
-const EMAIL_GATE_MODE = String(process.env.EMAIL_GATE_MODE || "mock").trim().toLowerCase();
-const EMAIL_GATE_WEBHOOK_URL = String(process.env.EMAIL_GATE_WEBHOOK_URL || "").trim();
-const DEFAULT_SITE_CHAT_MODEL = "minimax/MiniMax-M2.1";
-const sessionEventStore = new Map();
-const SESSION_EVENT_TTL_MS = 24 * 60 * 60 * 1000;
 
-// RAG Data Paths
-const RAG_BASE = path.resolve(process.env.RAG_BASE_PATH || path.join(__dirname, ".data", "jamf-pro-docs"));
-const RAG_INDEX_DIR = path.join(RAG_BASE, "index");
-const MAX_INDEX_FILE_BYTES = 300 * 1024 * 1024;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = Number.parseInt(process.env.SITE_CHAT_RATE_LIMIT_MAX || "30", 10);
+const rateLimitStore = new Map();
+
+const MINIMAX_BASE_URL = String(process.env.MINIMAX_BASE_URL || "https://api.minimax.io/anthropic").replace(/\/+$/, "");
+const MINIMAX_API_KEY = String(process.env.MINIMAX_API_KEY || "").trim();
+const DEFAULT_MODEL = String(process.env.SITE_CHAT_DEFAULT_MODEL || "minimax/MiniMax-M2.1").trim();
+const MODEL_ALLOWLIST = [
+  "minimax/MiniMax-M2.5",
+  "minimax/MiniMax-M2.1",
+  "minimax/MiniMax-M2.1-lightning"
+];
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -44,296 +44,6 @@ const MIME = {
   ".mp4": "video/mp4",
   ".txt": "text/plain; charset=utf-8"
 };
-
-const KNOWN_MODELS = [
-  { ref: "kimi-coding/k2p5", providerId: "kimi-coding", modelId: "k2p5", label: "Kimi K2.5" },
-  { ref: "minimax/MiniMax-M2.5", providerId: "minimax", modelId: "MiniMax-M2.5", label: "MiniMax M2.5" },
-  { ref: "minimax/MiniMax-M2.1", providerId: "minimax", modelId: "MiniMax-M2.1", label: "MiniMax M2.1" },
-  { ref: "minimax/MiniMax-M2.1-lightning", providerId: "minimax", modelId: "MiniMax-M2.1-lightning", label: "MiniMax M2.1 Lightning" }
-];
-
-const READ_BASE = "https://r.jina.ai/http://";
-
-// Cache for loaded indexes
-let ragIndexCache = null;
-let ragCacheTime = 0;
-const RAG_CACHE_TTL_MS = 60_000; // 1 minute cache
-
-function normalizeBaseUrl(baseUrl) {
-  return String(baseUrl || "").replace(/\/+$/, "");
-}
-
-function defaultBaseUrlForProvider(providerId) {
-  if (providerId === "kimi-coding") return normalizeBaseUrl(process.env.KIMI_BASE_URL || "https://api.kimi.com/coding/");
-  if (providerId === "minimax") return normalizeBaseUrl(process.env.MINIMAX_BASE_URL || "https://api.minimax.io/anthropic");
-  return "";
-}
-
-function loadEnvProviders() {
-  const providers = {};
-  if (process.env.KIMI_API_KEY) {
-    providers["kimi-coding"] = {
-      baseUrl: normalizeBaseUrl(process.env.KIMI_BASE_URL || "https://api.kimi.com/coding/"),
-      apiKey: process.env.KIMI_API_KEY
-    };
-  }
-  if (process.env.MINIMAX_API_KEY) {
-    providers.minimax = {
-      baseUrl: normalizeBaseUrl(process.env.MINIMAX_BASE_URL || "https://api.minimax.io/anthropic"),
-      apiKey: process.env.MINIMAX_API_KEY
-    };
-  }
-  return providers;
-}
-
-async function loadRuntimeProviders() {
-  return loadEnvProviders();
-}
-
-function resolveModelRoute(modelRef, providers) {
-  const match = KNOWN_MODELS.find((m) => m.ref === modelRef);
-  if (!match) throw new Error("Unsupported model");
-  const provider = providers[match.providerId];
-  const apiKey = provider?.apiKey || "";
-  const baseUrl = provider?.baseUrl || defaultBaseUrlForProvider(match.providerId);
-
-  if (!apiKey || !baseUrl) {
-    throw new Error(`Provider unavailable for model: ${modelRef}. Configure backend env keys.`);
-  }
-  return {
-    providerId: match.providerId,
-    modelId: match.modelId,
-    baseUrl,
-    apiKey,
-    modelRef: match.ref
-  };
-}
-
-function listAvailableModels(providers) {
-  return KNOWN_MODELS
-    .filter((m) => Boolean(providers[m.providerId]?.apiKey && providers[m.providerId]?.baseUrl))
-    .map((m) => ({ ref: m.ref, label: m.label, configured: true }));
-}
-
-// ==================== RAG Functions ====================
-
-async function loadRagIndexes() {
-  const now = Date.now();
-  if (ragIndexCache && (now - ragCacheTime) < RAG_CACHE_TTL_MS) {
-    return { index: ragIndexCache };
-  }
-
-  if (RAG_REMOTE_INDEX_URL) {
-    try {
-      const headers = {};
-      if (RAG_REMOTE_INDEX_BEARER) {
-        headers.Authorization = `Bearer ${RAG_REMOTE_INDEX_BEARER}`;
-      }
-      const res = await fetch(RAG_REMOTE_INDEX_URL, { headers });
-      if (!res.ok) {
-        throw new Error(`Remote index fetch failed: ${res.status}`);
-      }
-      const remoteIndex = await res.json();
-      if (!remoteIndex || typeof remoteIndex !== "object" || !remoteIndex.keyword_index || !remoteIndex.chunks) {
-        throw new Error("Remote index format is invalid");
-      }
-      ragIndexCache = remoteIndex;
-      ragCacheTime = now;
-      return { index: remoteIndex };
-    } catch (e) {
-      console.error("Error loading remote RAG index:", e.message);
-      return { index: null };
-    }
-  }
-
-  try {
-    const indexes = [];
-
-    try {
-      const indexFiles = readdirSync(RAG_INDEX_DIR).filter(f => f.endsWith("_index.json"));
-      for (const file of indexFiles) {
-        const filePath = path.join(RAG_INDEX_DIR, file);
-        const stats = statSync(filePath);
-        if (stats.size > MAX_INDEX_FILE_BYTES) {
-          console.warn(`Skipping oversized index file: ${file} (${stats.size} bytes)`);
-          continue;
-        }
-        const indexData = JSON.parse(readFileSync(filePath, "utf-8"));
-        indexes.push(indexData);
-      }
-    } catch (e) {
-      console.log("RAG indexes not found or error loading:", e.message);
-      return { index: null };
-    }
-
-    if (indexes.length === 0) {
-      return { index: null };
-    }
-
-    // Merge indexes
-    const mergedIndex = {
-      keyword_index: {},
-      chunks: {},
-      chunk_count: 0
-    };
-
-    for (const idx of indexes) {
-      mergedIndex.chunk_count += idx.chunk_count || 0;
-      // Merge keyword index
-      for (const [word, ids] of Object.entries(idx.keyword_index || {})) {
-        if (!mergedIndex.keyword_index[word]) {
-          mergedIndex.keyword_index[word] = [];
-        }
-        mergedIndex.keyword_index[word].push(...ids);
-      }
-      // Merge chunk previews
-      Object.assign(mergedIndex.chunks, idx.chunks);
-    }
-
-    ragIndexCache = mergedIndex;
-    ragCacheTime = now;
-
-    return { index: mergedIndex };
-  } catch (e) {
-    console.error("Error loading RAG indexes:", e);
-    return { index: null };
-  }
-}
-
-function searchLocalIndex(query, index, topK = 5) {
-  if (!index || !index.keyword_index) return [];
-
-  const queryWords = query.toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(w => w.length >= 3);
-
-  const scores = {};
-  for (const word of queryWords) {
-    const matches = index.keyword_index[word];
-    if (matches) {
-      for (const chunkId of matches) {
-        scores[chunkId] = (scores[chunkId] || 0) + 1;
-      }
-    }
-  }
-
-  // Sort by score
-  const sorted = Object.entries(scores)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, topK);
-
-  return sorted.map(([chunkId, score]) => ({
-    id: chunkId,
-    score,
-    source: "local"
-  }));
-}
-
-async function fetchLocalChunks(chunkIds, index) {
-  const results = [];
-  for (const id of chunkIds) {
-    const chunk = index?.chunks?.[id];
-    if (chunk) {
-      results.push({
-        id,
-        text: chunk.text,
-        source: chunk.source || "JAMF Pro Documentation",
-        chunk_num: Number.isFinite(chunk.chunk_num) ? chunk.chunk_num : null
-      });
-    }
-  }
-  return results;
-}
-
-// ==================== End RAG Functions ====================
-
-async function fetchDocSnippetsFromWeb(urls) {
-  const snippets = [];
-  for (const url of urls) {
-    try {
-      const readerUrl = READ_BASE + url.replace(/^https?:\/\//, "");
-      const res = await fetch(readerUrl);
-      if (!res.ok) continue;
-      const text = await res.text();
-      snippets.push({ url, text: text.slice(0, 2200), source: url });
-    } catch {
-      // Skip any source fetch error.
-    }
-  }
-  return snippets;
-}
-
-function buildSystemPrompt(snippets, hasEvidence) {
-  if (!hasEvidence || snippets.length === 0) {
-    return [
-      "You are JAMF Agent, a JAMF Pro assistant.",
-      "CRITICAL: No relevant documentation was found for this query.",
-      "Respond with exactly: NO_EVIDENCE",
-      "Do not provide generic advice. Only use the NO_EVIDENCE response when no context is available."
-    ].join("\n");
-  }
-
-  const context = snippets
-    .map((s, i) => `Source ${i + 1}: ${s.source || s.url || "JAMF Pro Documentation"}\n${s.text.slice(0, 3000)}`)
-    .join("\n\n");
-
-  return [
-    "You are JAMF Agent, a JAMF Pro expert assistant.",
-    "Use ONLY the provided documentation context to answer.",
-    "Give concise, actionable steps and mention key UI paths.",
-    "If context is insufficient, say so clearly.",
-    "Cite sources by number [1], [2], etc.",
-    "",
-    "Context:",
-    context
-  ].join("\n");
-}
-
-function toAnthropicMessages(history, question) {
-  const past = Array.isArray(history) ? history.slice(-8) : [];
-  const valid = past
-    .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-    .map((m) => ({ role: m.role, content: m.content }));
-
-  return [...valid, { role: "user", content: question }];
-}
-
-function parseAnthropicText(data) {
-  const blocks = Array.isArray(data?.content) ? data.content : [];
-  const text = blocks.filter((b) => b?.type === "text" && typeof b?.text === "string").map((b) => b.text).join("\n\n").trim();
-  return text;
-}
-
-async function callProvider({ provider, modelRef, question, history, snippets, hasEvidence }) {
-  const endpoint = `${provider.baseUrl}/v1/messages`;
-  const payload = {
-    model: provider.modelId,
-    max_tokens: 1200,
-    temperature: 0.2,
-    system: buildSystemPrompt(snippets, hasEvidence),
-    messages: toAnthropicMessages(history, question)
-  };
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${provider.apiKey}`,
-      "anthropic-version": "2023-06-01"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Provider request failed (${modelRef}): ${res.status} ${err.slice(0, 220)}`);
-  }
-
-  const data = await res.json();
-  const text = parseAnthropicText(data);
-  if (!text) throw new Error(`Provider returned no text for ${modelRef}`);
-  return text;
-}
 
 function sendJson(res, status, body) {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -371,9 +81,7 @@ async function readJsonBody(req) {
     let raw = "";
     req.on("data", (chunk) => {
       raw += chunk;
-      if (raw.length > 1_000_000) {
-        reject(new Error("Request too large"));
-      }
+      if (raw.length > 1_000_000) reject(new Error("Request too large"));
     });
     req.on("end", () => {
       try {
@@ -386,15 +94,7 @@ async function readJsonBody(req) {
   });
 }
 
-function clampQuestion(question) {
-  return String(question || "").trim().slice(0, 4000);
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
-}
-
-function sanitizeMessageList(messages) {
+function sanitizeMessages(messages) {
   if (!Array.isArray(messages)) return [];
   return messages
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -403,63 +103,60 @@ function sanitizeMessageList(messages) {
     .slice(-16);
 }
 
-function getSessionContext(sessionId) {
-  if (!sessionId) return null;
-  const current = sessionEventStore.get(sessionId);
-  if (!current) return null;
-  if ((Date.now() - current.updatedAt) > SESSION_EVENT_TTL_MS) {
-    sessionEventStore.delete(sessionId);
-    return null;
-  }
-  return current;
+function sanitizePage(page) {
+  if (!page || typeof page !== "object") return null;
+  return {
+    url: String(page.url || "").slice(0, 1000),
+    title: String(page.title || "").slice(0, 300),
+    path: String(page.path || "").slice(0, 300)
+  };
 }
 
-function upsertSessionEvent(sessionId, event) {
-  if (!sessionId || !event || typeof event !== "object") return;
-  const current = getSessionContext(sessionId) || {};
-  if (event.type === "page_view") {
-    current.pageView = {
-      url: String(event.url || ""),
-      title: String(event.title || ""),
-      siteName: String(event.siteName || ""),
-      path: String(event.path || ""),
-      referrer: String(event.referrer || ""),
-      ts: Number.isFinite(event.ts) ? event.ts : Date.now()
-    };
-  } else if (event.type === "gate_state") {
-    current.gateState = {
-      state: String(event.state || ""),
-      email: String(event.email || ""),
-      ts: Number.isFinite(event.ts) ? event.ts : Date.now()
-    };
-  }
-  current.updatedAt = Date.now();
-  sessionEventStore.set(sessionId, current);
+function resolveModelRef(inputRef) {
+  const requested = String(inputRef || DEFAULT_MODEL).trim();
+  if (MODEL_ALLOWLIST.includes(requested)) return requested;
+  return DEFAULT_MODEL;
 }
 
-function buildSiteSystemPrompt(pageView) {
-  const contextBits = [];
-  if (pageView?.url) contextBits.push(`URL: ${pageView.url}`);
-  if (pageView?.title) contextBits.push(`Title: ${pageView.title}`);
-  if (pageView?.path) contextBits.push(`Path: ${pageView.path}`);
-  if (pageView?.siteName) contextBits.push(`Site: ${pageView.siteName}`);
+function minimaxModelId(modelRef) {
+  const parts = String(modelRef).split("/");
+  return parts.length > 1 ? parts[1] : "MiniMax-M2.1";
+}
+
+function parseAssistantText(data) {
+  const blocks = Array.isArray(data?.content) ? data.content : [];
+  return blocks
+    .filter((b) => b?.type === "text" && typeof b?.text === "string")
+    .map((b) => b.text)
+    .join("\n\n")
+    .trim();
+}
+
+function buildSystemPrompt(page) {
+  const context = [];
+  if (page?.url) context.push(`URL: ${page.url}`);
+  if (page?.title) context.push(`Title: ${page.title}`);
+  if (page?.path) context.push(`Path: ${page.path}`);
 
   return [
-    "You are a concise website assistant for tphch.com.",
-    "Guide the user based on the current page context.",
-    "Do not claim to have scraped page content.",
-    "Only use provided navigation metadata and user messages.",
-    contextBits.length > 0 ? `Current page context:\n${contextBits.join("\n")}` : "Current page context: unavailable"
+    "You are Flint, a concise website assistant.",
+    "Use only the provided page metadata and user messages for context.",
+    "Do not claim to read hidden page content.",
+    context.length > 0 ? `Page context:\n${context.join("\n")}` : "Page context: unavailable"
   ].join("\n");
 }
 
-async function callSiteChatProvider({ provider, modelRef, messages, pageView }) {
-  const endpoint = `${provider.baseUrl}/v1/messages`;
+async function callMiniMax({ modelRef, messages, page }) {
+  if (!MINIMAX_API_KEY) {
+    throw new Error("MINIMAX_API_KEY is not configured on the server.");
+  }
+
+  const endpoint = `${MINIMAX_BASE_URL}/v1/messages`;
   const payload = {
-    model: provider.modelId,
+    model: minimaxModelId(modelRef),
     max_tokens: 900,
     temperature: 0.3,
-    system: buildSiteSystemPrompt(pageView),
+    system: buildSystemPrompt(page),
     messages
   };
 
@@ -467,7 +164,7 @@ async function callSiteChatProvider({ provider, modelRef, messages, pageView }) 
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${provider.apiKey}`,
+      "Authorization": `Bearer ${MINIMAX_API_KEY}`,
       "anthropic-version": "2023-06-01"
     },
     body: JSON.stringify(payload)
@@ -475,12 +172,12 @@ async function callSiteChatProvider({ provider, modelRef, messages, pageView }) 
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Provider request failed (${modelRef}): ${res.status} ${err.slice(0, 220)}`);
+    throw new Error(`MiniMax request failed: ${res.status} ${err.slice(0, 180)}`);
   }
 
   const data = await res.json();
-  const text = parseAnthropicText(data);
-  if (!text) throw new Error(`Provider returned no text for ${modelRef}`);
+  const text = parseAssistantText(data);
+  if (!text) throw new Error("MiniMax returned an empty response.");
   return text;
 }
 
@@ -534,7 +231,27 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "POST" && pathname === "/api/jamf-agent/chat") {
+  if (req.method === "GET" && pathname === "/api/chat/health") {
+    sendJson(res, 200, {
+      ok: true,
+      mode: "proxy",
+      provider: {
+        minimaxConfigured: Boolean(MINIMAX_API_KEY),
+        baseUrl: MINIMAX_BASE_URL
+      },
+      models: MODEL_ALLOWLIST
+    });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/chat/models") {
+    sendJson(res, 200, {
+      models: MODEL_ALLOWLIST.map((ref) => ({ ref, enabled: true }))
+    });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/chat/message") {
     if (!enforceRateLimit(req)) {
       sendJson(res, 429, { ok: false, error: "Rate limit exceeded. Please retry shortly." });
       return;
@@ -542,181 +259,10 @@ const server = createServer(async (req, res) => {
 
     try {
       const body = await readJsonBody(req);
-      const question = clampQuestion(body?.question);
-      const modelRef = String(body?.modelRef || "kimi-coding/k2p5").trim();
-      const useDocs = body?.useDocs !== false;
-      const history = Array.isArray(body?.history) ? body.history : [];
-      const docLimit = Math.min(Math.max(Number.parseInt(String(body?.docLimit ?? "5"), 10) || 5, 1), 10);
-
-      if (!question) {
-        sendJson(res, 400, { error: "Question is required" });
-        return;
-      }
-
-      const providers = await loadRuntimeProviders();
-      const availableModels = listAvailableModels(providers);
-      if (availableModels.length === 0) {
-        sendJson(res, 500, { ok: false, error: "No models available." });
-        return;
-      }
-      const provider = resolveModelRoute(modelRef, providers);
-
-      // ==================== RAG Flow ====================
-      let snippets = [];
-      let sources = [];
-      let hasEvidence = false;
-      let usedLocalIndex = false;
-
-      if (useDocs) {
-        // 1. Try local index first
-        const { index } = await loadRagIndexes();
-        
-        if (index) {
-          const searchResults = searchLocalIndex(question, index, docLimit);
-          
-          if (searchResults.length > 0) {
-            const chunkIds = searchResults.map(r => r.id);
-            const localSnippets = await fetchLocalChunks(chunkIds, index);
-            
-            if (localSnippets.length > 0) {
-              snippets = localSnippets.map(s => ({
-                text: s.text,
-                source: Number.isFinite(s.chunk_num)
-                  ? `JAMF Pro Docs (chunk ${s.chunk_num + 1})`
-                  : "JAMF Pro Docs"
-              }));
-              sources = searchResults.map(r => `chunk:${r.id}`);
-              hasEvidence = true;
-              usedLocalIndex = true;
-            }
-          }
-        }
-
-        // 2. Fall back to web sources if no local evidence
-        if (!hasEvidence) {
-          // Use a minimal fallback - no evidence path
-          hasEvidence = false;
-        }
-      }
-
-      const answer = await callProvider({ 
-        provider, 
-        modelRef, 
-        question, 
-        history, 
-        snippets, 
-        hasEvidence 
-      });
-
-      // Check for NO_EVIDENCE response
-      const isNoEvidence = answer.includes("NO_EVIDENCE") || 
-                           (!hasEvidence && answer.toLowerCase().includes("no evidence"));
-
-      sendJson(res, 200, {
-        ok: true,
-        answer: isNoEvidence 
-          ? "I don't have specific documentation for that query. Please try a more specific JAMF Pro question, or the documentation may not cover this topic."
-          : answer,
-        sources,
-        modelRef,
-        usedDocs: useDocs,
-        usedLocalIndex,
-        hasEvidence: !isNoEvidence,
-        citations: snippets.map((s, i) => ({ id: i + 1, source: s.source }))
-      });
-    } catch (error) {
-      sendJson(res, 500, {
-        ok: false,
-        error: error instanceof Error ? error.message : "Unexpected server error"
-      });
-    }
-    return;
-  }
-
-  if (req.method === "POST" && pathname === "/api/site-chat/gate/submit") {
-    try {
-      const body = await readJsonBody(req);
-      const email = String(body?.email || "").trim().toLowerCase();
-      if (!isValidEmail(email)) {
-        sendJson(res, 400, { ok: false, error: "Valid email is required." });
-        return;
-      }
-
-      if (EMAIL_GATE_MODE === "mock") {
-        sendJson(res, 200, { ok: true, unlocked: true, mode: "mock" });
-        return;
-      }
-
-      if (EMAIL_GATE_WEBHOOK_URL) {
-        const forward = await fetch(EMAIL_GATE_WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            sessionId: String(body?.sessionId || ""),
-            url: String(body?.url || ""),
-            title: String(body?.title || ""),
-            ts: Date.now()
-          })
-        });
-
-        if (!forward.ok) {
-          const err = await forward.text();
-          sendJson(res, 502, { ok: false, error: `Email capture upstream failed: ${forward.status} ${err.slice(0, 180)}` });
-          return;
-        }
-        sendJson(res, 200, { ok: true, unlocked: true, mode: "webhook" });
-        return;
-      }
-
-      sendJson(res, 501, { ok: false, error: "Email gate backend mode is enabled but no EMAIL_GATE_WEBHOOK_URL is configured." });
-    } catch (error) {
-      sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : "Unexpected server error" });
-    }
-    return;
-  }
-
-  if (req.method === "POST" && pathname === "/api/site-chat/events") {
-    try {
-      const body = await readJsonBody(req);
-      const sessionId = String(body?.sessionId || "").trim().slice(0, 200);
-      const event = body?.event;
-      if (!sessionId) {
-        sendJson(res, 400, { ok: false, error: "sessionId is required" });
-        return;
-      }
-
-      if (!event || typeof event !== "object") {
-        sendJson(res, 400, { ok: false, error: "event is required" });
-        return;
-      }
-
-      const type = String(event.type || "");
-      const validType = type === "gate_state" || type === "page_view" || type === "chat_command";
-      if (!validType) {
-        sendJson(res, 400, { ok: false, error: "Unsupported event type" });
-        return;
-      }
-
-      upsertSessionEvent(sessionId, event);
-      sendJson(res, 200, { ok: true });
-    } catch (error) {
-      sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : "Unexpected server error" });
-    }
-    return;
-  }
-
-  if (req.method === "POST" && pathname === "/api/site-chat/chat") {
-    if (!enforceRateLimit(req)) {
-      sendJson(res, 429, { ok: false, error: "Rate limit exceeded. Please retry shortly." });
-      return;
-    }
-
-    try {
-      const body = await readJsonBody(req);
-      const sessionId = String(body?.sessionId || "").trim().slice(0, 200);
-      const messages = sanitizeMessageList(body?.messages);
-      const modelRef = String(body?.modelRef || DEFAULT_SITE_CHAT_MODEL).trim();
+      const sessionId = String(body?.sessionId || "").trim().slice(0, 120);
+      const messages = sanitizeMessages(body?.messages);
+      const page = sanitizePage(body?.page);
+      const modelRef = resolveModelRef(body?.modelRef);
 
       if (!sessionId) {
         sendJson(res, 400, { ok: false, error: "sessionId is required" });
@@ -728,25 +274,14 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const providers = await loadRuntimeProviders();
-      const availableModels = listAvailableModels(providers);
-      if (availableModels.length === 0) {
-        sendJson(res, 500, { ok: false, error: "No models available." });
-        return;
-      }
-      const provider = resolveModelRoute(modelRef, providers);
-      const pageView = getSessionContext(sessionId)?.pageView || null;
-      const answer = await callSiteChatProvider({ provider, modelRef, messages, pageView });
-
+      const assistantText = await callMiniMax({ modelRef, messages, page });
       sendJson(res, 200, {
         ok: true,
-        sessionId,
-        modelRef,
-        assistantMessage: {
+        model: modelRef,
+        assistant: {
           role: "assistant",
-          content: answer
-        },
-        context: pageView
+          content: assistantText
+        }
       });
     } catch (error) {
       sendJson(res, 500, {
@@ -757,58 +292,12 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && pathname === "/api/jamf-agent/models") {
-    const providers = await loadRuntimeProviders();
-    sendJson(res, 200, {
-      models: listAvailableModels(providers)
-    });
-    return;
-  }
-
-  if (req.method === "GET" && pathname === "/api/jamf-agent/health") {
-    // Also return RAG status
-    const { index } = await loadRagIndexes();
-    sendJson(res, 200, { 
-      ok: true,
-      rag: {
-        available: !!index,
-        chunkCount: index?.chunk_count || 0
-      }
-    });
-    return;
-  }
-
-  if (req.method === "GET" && pathname === "/api/site-chat/health") {
-    sendJson(res, 200, {
-      ok: true,
-      gateMode: EMAIL_GATE_MODE,
-      sessionsTracked: sessionEventStore.size
-    });
-    return;
-  }
-
   serveStatic(req, res);
 });
 
 server.listen(PORT, HOST, () => {
-  // Create RAG directories if they don't exist
-  try {
-    if (!existsSync(RAG_BASE)) {
-      mkdirSync(RAG_BASE, { recursive: true });
-      mkdirSync(path.join(RAG_BASE, "raw"), { recursive: true });
-      mkdirSync(path.join(RAG_BASE, "normalized"), { recursive: true });
-      mkdirSync(path.join(RAG_BASE, "chunks"), { recursive: true });
-      mkdirSync(path.join(RAG_BASE, "index"), { recursive: true });
-      mkdirSync(path.join(RAG_BASE, "manifests"), { recursive: true });
-      console.log("Created RAG data directories");
-    }
-  } catch (e) {
-    console.warn("Could not create RAG directories:", e.message);
-  }
-
-  if (NODE_ENV === "production" && ALLOWED_ORIGINS.length === 0) {
-    console.warn("Warning: SITE_CHAT_ALLOWED_ORIGINS/JAMF_AGENT_ALLOWED_ORIGINS is empty in production. Set an origin allowlist.");
+  if (NODE_ENV === "production") {
+    console.log("Running static server with MiniMax chat proxy.");
   }
   console.log(`AI Website server running on http://${HOST}:${PORT}`);
-  console.log(`RAG data path: ${RAG_BASE}`);
 });

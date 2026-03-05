@@ -21,7 +21,6 @@ cp "$ENV_EXAMPLE" "$ENV_FILE"
 # macOS/BSD sed requires backup extension argument.
 sed -i '' 's/^HOST=.*/HOST=127.0.0.1/' "$ENV_FILE"
 sed -i '' 's/^NODE_ENV=.*/NODE_ENV=development/' "$ENV_FILE"
-sed -i '' 's|^JAMF_AGENT_ALLOWED_ORIGINS=.*|JAMF_AGENT_ALLOWED_ORIGINS=http://127.0.0.1:8080,http://localhost:8080|' "$ENV_FILE"
 
 echo "Created .env with local defaults."
-echo "Next: update KIMI_API_KEY or MINIMAX_API_KEY if needed, then run: npm run start:env"
+echo "Run: npm run start"

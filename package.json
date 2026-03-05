@@ -1,7 +1,7 @@
 {
   "name": "ai-website",
   "version": "1.0.0",
-  "description": "AI Website with JAMF Agent chatbot",
+  "description": "AI Website static portfolio",
   "main": "server.mjs",
   "type": "module",
   "scripts": {
