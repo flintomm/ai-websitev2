@@ -9,16 +9,23 @@ const __dirname = path.dirname(__filename);
 const PORT = Number.parseInt(process.env.PORT || "8080", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 const NODE_ENV = process.env.NODE_ENV || "development";
-const ALLOWED_ORIGINS = (process.env.JAMF_AGENT_ALLOWED_ORIGINS || "")
+const ALLOWED_ORIGINS = (process.env.SITE_CHAT_ALLOWED_ORIGINS || process.env.JAMF_AGENT_ALLOWED_ORIGINS || "")
   .split(",")
   .map((v) => v.trim())
   .filter(Boolean);
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = Number.parseInt(process.env.JAMF_AGENT_RATE_LIMIT_MAX || "30", 10);
+const RATE_LIMIT_MAX = Number.parseInt(process.env.SITE_CHAT_RATE_LIMIT_MAX || process.env.JAMF_AGENT_RATE_LIMIT_MAX || "30", 10);
 const rateLimitStore = new Map();
+const RAG_REMOTE_INDEX_URL = String(process.env.RAG_REMOTE_INDEX_URL || "").trim();
+const RAG_REMOTE_INDEX_BEARER = String(process.env.RAG_REMOTE_INDEX_BEARER || "").trim();
+const EMAIL_GATE_MODE = String(process.env.EMAIL_GATE_MODE || "mock").trim().toLowerCase();
+const EMAIL_GATE_WEBHOOK_URL = String(process.env.EMAIL_GATE_WEBHOOK_URL || "").trim();
+const DEFAULT_SITE_CHAT_MODEL = "minimax/MiniMax-M2.1";
+const sessionEventStore = new Map();
+const SESSION_EVENT_TTL_MS = 24 * 60 * 60 * 1000;
 
 // RAG Data Paths
-const RAG_BASE = path.join(__dirname, ".data", "jamf-pro-docs");
+const RAG_BASE = path.resolve(process.env.RAG_BASE_PATH || path.join(__dirname, ".data", "jamf-pro-docs"));
 const RAG_INDEX_DIR = path.join(RAG_BASE, "index");
 const MAX_INDEX_FILE_BYTES = 300 * 1024 * 1024;
 
@@ -114,6 +121,29 @@ async function loadRagIndexes() {
   const now = Date.now();
   if (ragIndexCache && (now - ragCacheTime) < RAG_CACHE_TTL_MS) {
     return { index: ragIndexCache };
+  }
+
+  if (RAG_REMOTE_INDEX_URL) {
+    try {
+      const headers = {};
+      if (RAG_REMOTE_INDEX_BEARER) {
+        headers.Authorization = `Bearer ${RAG_REMOTE_INDEX_BEARER}`;
+      }
+      const res = await fetch(RAG_REMOTE_INDEX_URL, { headers });
+      if (!res.ok) {
+        throw new Error(`Remote index fetch failed: ${res.status}`);
+      }
+      const remoteIndex = await res.json();
+      if (!remoteIndex || typeof remoteIndex !== "object" || !remoteIndex.keyword_index || !remoteIndex.chunks) {
+        throw new Error("Remote index format is invalid");
+      }
+      ragIndexCache = remoteIndex;
+      ragCacheTime = now;
+      return { index: remoteIndex };
+    } catch (e) {
+      console.error("Error loading remote RAG index:", e.message);
+      return { index: null };
+    }
   }
 
   try {
@@ -360,6 +390,100 @@ function clampQuestion(question) {
   return String(question || "").trim().slice(0, 4000);
 }
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+}
+
+function sanitizeMessageList(messages) {
+  if (!Array.isArray(messages)) return [];
+  return messages
+    .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+    .map((m) => ({ role: m.role, content: m.content.trim().slice(0, 4000) }))
+    .filter((m) => Boolean(m.content))
+    .slice(-16);
+}
+
+function getSessionContext(sessionId) {
+  if (!sessionId) return null;
+  const current = sessionEventStore.get(sessionId);
+  if (!current) return null;
+  if ((Date.now() - current.updatedAt) > SESSION_EVENT_TTL_MS) {
+    sessionEventStore.delete(sessionId);
+    return null;
+  }
+  return current;
+}
+
+function upsertSessionEvent(sessionId, event) {
+  if (!sessionId || !event || typeof event !== "object") return;
+  const current = getSessionContext(sessionId) || {};
+  if (event.type === "page_view") {
+    current.pageView = {
+      url: String(event.url || ""),
+      title: String(event.title || ""),
+      siteName: String(event.siteName || ""),
+      path: String(event.path || ""),
+      referrer: String(event.referrer || ""),
+      ts: Number.isFinite(event.ts) ? event.ts : Date.now()
+    };
+  } else if (event.type === "gate_state") {
+    current.gateState = {
+      state: String(event.state || ""),
+      email: String(event.email || ""),
+      ts: Number.isFinite(event.ts) ? event.ts : Date.now()
+    };
+  }
+  current.updatedAt = Date.now();
+  sessionEventStore.set(sessionId, current);
+}
+
+function buildSiteSystemPrompt(pageView) {
+  const contextBits = [];
+  if (pageView?.url) contextBits.push(`URL: ${pageView.url}`);
+  if (pageView?.title) contextBits.push(`Title: ${pageView.title}`);
+  if (pageView?.path) contextBits.push(`Path: ${pageView.path}`);
+  if (pageView?.siteName) contextBits.push(`Site: ${pageView.siteName}`);
+
+  return [
+    "You are a concise website assistant for tphch.com.",
+    "Guide the user based on the current page context.",
+    "Do not claim to have scraped page content.",
+    "Only use provided navigation metadata and user messages.",
+    contextBits.length > 0 ? `Current page context:\n${contextBits.join("\n")}` : "Current page context: unavailable"
+  ].join("\n");
+}
+
+async function callSiteChatProvider({ provider, modelRef, messages, pageView }) {
+  const endpoint = `${provider.baseUrl}/v1/messages`;
+  const payload = {
+    model: provider.modelId,
+    max_tokens: 900,
+    temperature: 0.3,
+    system: buildSiteSystemPrompt(pageView),
+    messages
+  };
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${provider.apiKey}`,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Provider request failed (${modelRef}): ${res.status} ${err.slice(0, 220)}`);
+  }
+
+  const data = await res.json();
+  const text = parseAnthropicText(data);
+  if (!text) throw new Error(`Provider returned no text for ${modelRef}`);
+  return text;
+}
+
 function safeResolveStatic(urlPath) {
   const pathOnly = urlPath.split("?")[0].split("#")[0];
   const rel = pathOnly === "/" ? "index.html" : decodeURIComponent(pathOnly).replace(/^\/+/, "");
@@ -509,6 +633,130 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "POST" && pathname === "/api/site-chat/gate/submit") {
+    try {
+      const body = await readJsonBody(req);
+      const email = String(body?.email || "").trim().toLowerCase();
+      if (!isValidEmail(email)) {
+        sendJson(res, 400, { ok: false, error: "Valid email is required." });
+        return;
+      }
+
+      if (EMAIL_GATE_MODE === "mock") {
+        sendJson(res, 200, { ok: true, unlocked: true, mode: "mock" });
+        return;
+      }
+
+      if (EMAIL_GATE_WEBHOOK_URL) {
+        const forward = await fetch(EMAIL_GATE_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            sessionId: String(body?.sessionId || ""),
+            url: String(body?.url || ""),
+            title: String(body?.title || ""),
+            ts: Date.now()
+          })
+        });
+
+        if (!forward.ok) {
+          const err = await forward.text();
+          sendJson(res, 502, { ok: false, error: `Email capture upstream failed: ${forward.status} ${err.slice(0, 180)}` });
+          return;
+        }
+        sendJson(res, 200, { ok: true, unlocked: true, mode: "webhook" });
+        return;
+      }
+
+      sendJson(res, 501, { ok: false, error: "Email gate backend mode is enabled but no EMAIL_GATE_WEBHOOK_URL is configured." });
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : "Unexpected server error" });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/site-chat/events") {
+    try {
+      const body = await readJsonBody(req);
+      const sessionId = String(body?.sessionId || "").trim().slice(0, 200);
+      const event = body?.event;
+      if (!sessionId) {
+        sendJson(res, 400, { ok: false, error: "sessionId is required" });
+        return;
+      }
+
+      if (!event || typeof event !== "object") {
+        sendJson(res, 400, { ok: false, error: "event is required" });
+        return;
+      }
+
+      const type = String(event.type || "");
+      const validType = type === "gate_state" || type === "page_view" || type === "chat_command";
+      if (!validType) {
+        sendJson(res, 400, { ok: false, error: "Unsupported event type" });
+        return;
+      }
+
+      upsertSessionEvent(sessionId, event);
+      sendJson(res, 200, { ok: true });
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : "Unexpected server error" });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/site-chat/chat") {
+    if (!enforceRateLimit(req)) {
+      sendJson(res, 429, { ok: false, error: "Rate limit exceeded. Please retry shortly." });
+      return;
+    }
+
+    try {
+      const body = await readJsonBody(req);
+      const sessionId = String(body?.sessionId || "").trim().slice(0, 200);
+      const messages = sanitizeMessageList(body?.messages);
+      const modelRef = String(body?.modelRef || DEFAULT_SITE_CHAT_MODEL).trim();
+
+      if (!sessionId) {
+        sendJson(res, 400, { ok: false, error: "sessionId is required" });
+        return;
+      }
+
+      if (messages.length === 0 || !messages.some((m) => m.role === "user")) {
+        sendJson(res, 400, { ok: false, error: "At least one user message is required" });
+        return;
+      }
+
+      const providers = await loadRuntimeProviders();
+      const availableModels = listAvailableModels(providers);
+      if (availableModels.length === 0) {
+        sendJson(res, 500, { ok: false, error: "No models available." });
+        return;
+      }
+      const provider = resolveModelRoute(modelRef, providers);
+      const pageView = getSessionContext(sessionId)?.pageView || null;
+      const answer = await callSiteChatProvider({ provider, modelRef, messages, pageView });
+
+      sendJson(res, 200, {
+        ok: true,
+        sessionId,
+        modelRef,
+        assistantMessage: {
+          role: "assistant",
+          content: answer
+        },
+        context: pageView
+      });
+    } catch (error) {
+      sendJson(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Unexpected server error"
+      });
+    }
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/api/jamf-agent/models") {
     const providers = await loadRuntimeProviders();
     sendJson(res, 200, {
@@ -526,6 +774,15 @@ const server = createServer(async (req, res) => {
         available: !!index,
         chunkCount: index?.chunk_count || 0
       }
+    });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/site-chat/health") {
+    sendJson(res, 200, {
+      ok: true,
+      gateMode: EMAIL_GATE_MODE,
+      sessionsTracked: sessionEventStore.size
     });
     return;
   }
@@ -550,7 +807,7 @@ server.listen(PORT, HOST, () => {
   }
 
   if (NODE_ENV === "production" && ALLOWED_ORIGINS.length === 0) {
-    console.warn("Warning: JAMF_AGENT_ALLOWED_ORIGINS is empty in production. Set an origin allowlist.");
+    console.warn("Warning: SITE_CHAT_ALLOWED_ORIGINS/JAMF_AGENT_ALLOWED_ORIGINS is empty in production. Set an origin allowlist.");
   }
   console.log(`AI Website server running on http://${HOST}:${PORT}`);
   console.log(`RAG data path: ${RAG_BASE}`);

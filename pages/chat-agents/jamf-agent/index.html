@@ -3,35 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JAMF Agent Workspace</title>
+  <title>Assistant Migration Notice</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../../assets/site-assistant/site-assistant.css" />
   <style>
     :root {
-      --bg: #fff;
-      --surface: #f5f5f5;
-      --border: rgba(0,0,0,0.12);
-      --border-hi: rgba(0,0,0,0.28);
-      --text: #000;
-      --muted: #666;
+      --bg: #0a0a0a;
+      --surface: #131313;
+      --border: rgba(255,255,255,0.12);
+      --text: #fff;
+      --muted: rgba(255,255,255,0.58);
+      --accent: #39ff14;
       --font: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
-      --ok: #000;
-      --warn: #999;
-      --accent: #33ff88;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      color: var(--text);
-      font-family: var(--font);
-      background: var(--bg);
       min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background: radial-gradient(circle at 20% 18%, rgba(57,255,20,0.08), transparent 44%), #000;
     }
 
-    /* ===== SITE NAV ===== */
     .site-nav {
       padding: 1.2rem 2rem;
       border-bottom: 1px solid var(--border);
@@ -39,6 +36,17 @@
       align-items: center;
       justify-content: space-between;
     }
+
+    .back-link {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .back-link:hover { color: var(--accent); }
 
     .site-tag {
       font-size: 0.62rem;
@@ -48,435 +56,47 @@
       font-weight: 300;
     }
 
-    /* ===== MAIN SHELL ===== */
-    .docs-shell {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 1.5rem 1.5rem 7rem;
+    main {
+      max-width: 760px;
+      margin: 3rem auto;
+      padding: 0 1.2rem;
     }
 
-    /* Legacy topbar — now replaced by site-nav, keep hidden */
-    .topbar { display: none; }
-
-    /* ===== BACK LINK ===== */
-    .back-link {
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-
-    .back-link:hover { color: var(--accent); }
-
-    /* ===== BADGE ===== */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.28rem 0.7rem;
-      border: 1px solid var(--border-hi);
-      color: var(--muted);
-      font-size: 0.68rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      font-weight: 700;
-      background: transparent;
-    }
-
-    /* ===== HERO ===== */
-    .hero {
+    .stub-card {
       background: var(--surface);
       border: 1px solid var(--border);
       padding: 1.5rem;
-      margin-bottom: 1rem;
     }
 
-    .hero h1 {
+    h1 {
       margin: 0;
-      font-size: clamp(1.5rem, 3.7vw, 2.4rem);
-      font-weight: 700;
+      font-size: clamp(1.7rem, 3.8vw, 2.5rem);
       letter-spacing: -0.02em;
-      line-height: 1.05;
     }
 
-    .hero p {
-      margin: 0.75rem 0 0;
+    p {
+      margin: 0.8rem 0 0;
       color: var(--muted);
       line-height: 1.6;
-      max-width: 74ch;
-      font-size: 0.88rem;
+      font-size: 0.9rem;
     }
 
-    /* ===== DOC GRID ===== */
-    .docs-grid {
-      display: grid;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-      gap: 1px;
+    .cta {
+      margin-top: 1.1rem;
+      display: inline-flex;
       border: 1px solid var(--border);
-    }
-
-    .doc-card {
-      background: var(--surface);
-      border: none;
-      border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 1.2rem;
-      min-height: 190px;
-    }
-
-    .doc-card:last-child {
-      border-right: none;
-    }
-
-    .doc-card h2 {
-      margin: 0 0 0.55rem;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-    }
-
-    .doc-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.55;
-      font-size: 0.88rem;
-    }
-
-    .doc-card pre {
-      margin: 0.75rem 0 0;
-      padding: 0.7rem;
-      border: 1px solid var(--border);
-      background: #000;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 0.78rem;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-
-    .links {
-      margin: 0.7rem 0 0;
-      padding-left: 1.1rem;
-      color: var(--muted);
-      line-height: 1.8;
-      font-size: 0.88rem;
-    }
-
-    .links a {
+      padding: 0.55rem 0.88rem;
       color: var(--text);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
-    .links a:hover { color: var(--muted); }
-
-    .span-4  { grid-column: span 4; }
-    .span-6  { grid-column: span 6; }
-    .span-8  { grid-column: span 8; }
-    .span-12 { grid-column: span 12; }
-
-    /* ===== CHAT LAUNCHER ===== */
-    .chat-launcher {
-      position: fixed;
-      right: 1.1rem;
-      bottom: 1.1rem;
-      z-index: 90;
-      border: 1px solid var(--border-hi);
-      padding: 0.66rem 1.1rem;
-      background: #fff;
-      color: #000;
-      font-weight: 700;
-      font-size: 0.72rem;
+      text-decoration: none;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      cursor: pointer;
-      font-family: var(--font);
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .chat-launcher:hover {
-      background: var(--accent);
-      color: #000;
-    }
-
-    /* ===== CHAT WIDGET ===== */
-    .chat-widget {
-      position: fixed;
-      right: 1.1rem;
-      bottom: 4.5rem;
-      width: min(420px, calc(100vw - 2.2rem));
-      height: min(590px, calc(100vh - 6.2rem));
-      display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
-      border: 1px solid var(--border-hi);
-      background: var(--surface);
-      overflow: hidden;
-      z-index: 95;
-      transform-origin: bottom right;
-      transform: scale(1);
-      opacity: 1;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-
-    .chat-widget.minimized {
-      transform: scale(0.94);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    /* ===== CHAT HEADER ===== */
-    .chat-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      padding: 0.72rem 0.85rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .chat-head-title {
+      font-size: 0.67rem;
       font-weight: 700;
-      font-size: 0.72rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
     }
 
-    .head-actions {
-      display: flex;
-      gap: 0.38rem;
-      align-items: center;
-    }
-
-    .icon-btn,
-    .btn {
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text);
-      cursor: pointer;
-      font: inherit;
-      font-family: var(--font);
-    }
-
-    .icon-btn {
-      width: 28px;
-      height: 28px;
-      font-weight: 700;
-      font-size: 0.82rem;
-      line-height: 1;
-      transition: border-color 0.15s;
-    }
-
-    .icon-btn:hover { border-color: var(--border-hi); }
-
-    .btn {
-      padding: 0.44rem 0.7rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .btn:hover {
-      background: var(--accent);
-      color: #000;
+    .cta:hover {
       border-color: var(--accent);
-    }
-
-    /* ===== SETTINGS PANEL ===== */
-    .chat-settings {
-      padding: 0.65rem 0.85rem;
-      border-bottom: 1px solid var(--border);
-      display: grid;
-      gap: 0.55rem;
-      background: var(--surface);
-    }
-
-    .chat-settings-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-    }
-
-    label {
-      display: block;
-      color: var(--muted);
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 0.2rem;
-    }
-
-    input[type="password"],
-    input[type="text"],
-    select,
-    textarea {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      padding: 0.55rem 0.65rem;
-      font: inherit;
-      font-size: 0.84rem;
-      font-family: var(--font);
-    }
-
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--border-hi);
-    }
-
-    .row {
-      display: flex;
-      gap: 0.45rem;
-      align-items: center;
-      color: var(--muted);
-      font-size: 0.78rem;
-    }
-
-    #status {
-      color: var(--muted);
-      font-size: 0.75rem;
-      margin: 0;
-    }
-
-    /* ===== MESSAGES ===== */
-    #messages {
-      overflow: auto;
-      padding: 0.72rem;
-      display: grid;
-      gap: 0.5rem;
-      align-content: start;
-      background: #fff;
-    }
-
-    .bubble {
-      border: 1px solid var(--border);
-      padding: 0.62rem 0.72rem;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      font-size: 0.86rem;
-    }
-
-    .assistant {
-      background: var(--surface);
-      margin-right: 8%;
-    }
-
-    .user {
-      background: var(--surface);
-      border-color: var(--border-hi);
-      margin-left: 8%;
-    }
-
-    .sources {
-      margin-top: 0.42rem;
-      font-size: 0.74rem;
-      color: var(--muted);
-      display: grid;
-      gap: 0.18rem;
-    }
-
-    .sources a {
       color: var(--accent);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
-    .sources a:hover { color: var(--text); }
-
-    /* ===== COMPOSER ===== */
-    .composer {
-      border-top: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.5rem;
-      padding: 0.62rem;
-      background: var(--surface);
-    }
-
-    .composer textarea {
-      min-height: 60px;
-      max-height: 130px;
-      resize: vertical;
-      line-height: 1.45;
-    }
-
-    .template-row {
-      display: flex;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-      margin-top: 0.3rem;
-    }
-
-    .template-btn {
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.68rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 0.28rem 0.54rem;
-      cursor: pointer;
-      font-family: var(--font);
-      transition: border-color 0.15s, color 0.15s;
-    }
-
-    .template-btn:hover {
-      border-color: var(--border-hi);
-      color: var(--text);
-    }
-
-    /* ===== TECH STRIP ===== */
-    .tech-strip {
-      padding: 0.55rem 1.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1rem;
-    }
-    .tech-strip span {
-      font-size: 0.62rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      padding: 0.22rem 0.5rem;
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 0.72rem;
-      line-height: 1.4;
-      margin: 0;
-      letter-spacing: 0.05em;
-    }
-
-    @media (max-width: 980px) {
-      .span-4, .span-6, .span-8, .span-12 { grid-column: span 12; }
-      .docs-grid { border: none; gap: 0; }
-      .doc-card { border: 1px solid var(--border); margin-bottom: 1px; }
-      .site-nav { padding: 1rem 1.2rem; }
-      .docs-shell { padding: 1rem 1rem 7rem; }
-    }
-
-    @media (max-width: 620px) {
-      .chat-widget {
-        right: 0.6rem;
-        left: 0.6rem;
-        width: auto;
-        height: min(78vh, 620px);
-        bottom: 4.2rem;
-      }
-
-      .chat-settings-grid { grid-template-columns: 1fr; }
-      .assistant, .user { margin: 0; }
     }
   </style>
 </head>
@@ -485,376 +105,20 @@
     <a class="back-link" href="../../../index.html#section-4">< Flint</a>
     <span class="site-tag">Chat Agents</span>
   </nav>
-  <main class="docs-shell">
-    <header class="topbar">
-      <a class="back-link" href="../../../index.html#section-4">< Flint</a>
-      <span class="badge">Template Workspace</span>
-    </header>
 
-    <section class="hero">
-      <h1>JAMF Agent</h1>
+  <main>
+    <section class="stub-card" aria-label="Assistant migration notice">
+      <h1>Assistant Updated</h1>
       <p>
-        A documentation assistant for JAMF Pro docs. Ask about device enrollment, policy setup,
-        smart group logic, and patch management. It searches indexed documentation, not live Jamf tenant policy data.
+        The standalone JAMF Agent page has been retired. The new assistant now lives in the persistent site header and follows you across pages.
       </p>
-    </section>
-
-    <div class="tech-strip">
-      <span>RAG</span><span>Documentation Search</span><span>Node.js</span><span>LLM API</span>
-    </div>
-
-    <section class="docs-grid" aria-label="JAMF documentation templates">
-      <article class="doc-card span-6">
-        <h2>Policy Deployment Template</h2>
-        <p>Use this structure when drafting policy rollout plans.</p>
-<pre>Template: JAMF Policy Rollout
-1) Goal: [what the policy enforces]
-2) Scope: [smart/static group + exclusions]
-3) Trigger: [recurring check-in/self-service/custom]
-4) Payload: [scripts/packages/config profiles]
-5) Validation: [EA checks + logs + rollback]</pre>
-      </article>
-
-      <article class="doc-card span-6">
-        <h2>Smart Group Logic Template</h2>
-        <p>Reference format for targeting conditions and testing strategy.</p>
-<pre>Template: Smart Group Criteria
-- Platform: macOS version >= [x]
-- Management: Jamf binary present
-- Security: FileVault = Enabled
-- Exceptions: Department != [excluded group]
-- Dry run group: [5-10 pilot devices]</pre>
-      </article>
-
-      <article class="doc-card span-4">
-        <h2>Patch Management Notes</h2>
-        <p>
-          Keep a baseline for app titles, patch definitions, deferral windows, and user messaging cadence.
-        </p>
-      </article>
-
-      <article class="doc-card span-8">
-        <h2>Reference Links (Starter Set)</h2>
-        <p>Use these as initial source anchors while we expand full indexed retrieval.</p>
-        <ul class="links">
-          <li><a href="https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Jamf_Pro_Documentation.html" target="_blank" rel="noopener noreferrer nofollow external">Jamf Pro Documentation (current)</a></li>
-          <li><a href="https://learn.jamf.com/en-US/bundle/technical-articles/page/Technical_Articles.html" target="_blank" rel="noopener noreferrer nofollow external">Jamf Technical Articles</a></li>
-          <li><a href="https://developer.jamf.com/jamf-pro/reference/post_v1-auth-token" target="_blank" rel="noopener noreferrer nofollow external">Jamf Pro API Reference</a></li>
-          <li><a href="https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Smart_Computer_Groups.html" target="_blank" rel="noopener noreferrer nofollow external">Smart Computer Groups</a></li>
-        </ul>
-      </article>
-
-      <article class="doc-card span-12">
-        <h2>Prompting Templates For The Agent</h2>
-<pre>"Build a scoped Jamf Pro policy plan for [goal], include smart group criteria and rollback."
-"Compare two deployment triggers for [workflow] and recommend one with risks."
-"Draft API-based automation steps for [task] and list required permissions."
-"Give a validation checklist for this policy before production rollout."</pre>
-      </article>
+      <p>
+        Unlock access once with your email to enable guided chat and interactive controls.
+      </p>
+      <a class="cta" href="../../../index.html#section-4">Return to Home</a>
     </section>
   </main>
 
-  <button id="chatLauncher" class="chat-launcher" type="button" aria-expanded="false" aria-controls="chatWidget">Open JAMF Agent</button>
-
-  <aside id="chatWidget" class="chat-widget minimized" aria-label="JAMF chat window">
-    <header class="chat-head">
-      <div class="chat-head-title">JAMF Agent</div>
-      <div class="head-actions">
-        <button id="toggleSettings" class="icon-btn" type="button" title="Toggle settings">S</button>
-        <button id="toggleChat" class="icon-btn" type="button" title="Maximize chat">+</button>
-      </div>
-    </header>
-
-    <section id="settingsPanel" class="chat-settings">
-      <div class="chat-settings-grid">
-        <div>
-          <label for="model">Model Route</label>
-          <select id="model">
-            <option value="minimax/MiniMax-M2.1">MiniMax M2.1 (OpenClaw)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="chat-settings-grid">
-        <div>
-          <label for="apiBase">API Base URL</label>
-          <input id="apiBase" type="text" placeholder="https://your-backend.example.com" />
-        </div>
-        <div>
-          <label for="docLimit">Docs per Query (1-4)</label>
-          <input id="docLimit" type="text" value="2" />
-        </div>
-        <div>
-          <label for="useDocs">Retrieval</label>
-          <label class="row"><input id="useDocs" type="checkbox" checked /> Pull JAMF docs context</label>
-        </div>
-      </div>
-
-      <div class="row">
-        <button id="saveBtn" class="btn" type="button">Save Settings</button>
-        <p id="status">Ready</p>
-      </div>
-      <p class="hint">Secure mode: model keys stay on the backend and never in the browser.</p>
-    </section>
-
-    <div id="messages">
-      <div class="bubble assistant">Ask a JAMF docs question. I fetch indexed documentation and respond with sources (not live tenant policy lookups).</div>
-    </div>
-
-    <form id="chatForm" class="composer">
-      <div>
-        <textarea id="prompt" placeholder="Type your JAMF question..." required></textarea>
-        <div class="template-row">
-          <button class="template-btn" type="button" data-template="How do I enroll a new device?">Enroll a device</button>
-          <button class="template-btn" type="button" data-template="What does Jamf documentation recommend for password reset policy setup?">Password reset</button>
-          <button class="template-btn" type="button" data-template="How do I install approved software?">Install software</button>
-          <button class="template-btn" type="button" data-template="What MDM profiles are applied to my Mac?">MDM profiles</button>
-        </div>
-      </div>
-      <button id="sendBtn" class="btn" type="submit">Send</button>
-    </form>
-  </aside>
-
-  <script>
-    const STORAGE_KEY = "jamf_agent_settings_v1";
-    const DEFAULT_API_BASE = "https://fantastic-strength-production-7563.up.railway.app";
-    const DEFAULT_MODEL_REF = "minimax/MiniMax-M2.1";
-
-    const els = {
-      chatWidget: document.getElementById("chatWidget"),
-      chatLauncher: document.getElementById("chatLauncher"),
-      toggleChat: document.getElementById("toggleChat"),
-      toggleSettings: document.getElementById("toggleSettings"),
-      settingsPanel: document.getElementById("settingsPanel"),
-      model: document.getElementById("model"),
-      apiBase: document.getElementById("apiBase"),
-      docLimit: document.getElementById("docLimit"),
-      useDocs: document.getElementById("useDocs"),
-      saveBtn: document.getElementById("saveBtn"),
-      chatForm: document.getElementById("chatForm"),
-      prompt: document.getElementById("prompt"),
-      sendBtn: document.getElementById("sendBtn"),
-      messages: document.getElementById("messages"),
-      status: document.getElementById("status"),
-      templateButtons: document.querySelectorAll(".template-btn")
-    };
-
-    let history = [];
-    let chatOpen = false;
-    let settingsOpen = true;
-
-    function setStatus(text, tone) {
-      els.status.textContent = text;
-      els.status.style.color = tone === "ok" ? "var(--ok)" : tone === "warn" ? "var(--warn)" : "var(--muted)";
-    }
-
-    function setChatOpen(open) {
-      chatOpen = open;
-      els.chatWidget.classList.toggle("minimized", !open);
-      els.chatLauncher.textContent = open ? "Minimize JAMF Agent" : "Open JAMF Agent";
-      els.chatLauncher.setAttribute("aria-expanded", String(open));
-      els.toggleChat.textContent = open ? "-" : "+";
-      els.toggleChat.title = open ? "Minimize chat" : "Maximize chat";
-      if (open) {
-        requestAnimationFrame(() => els.prompt.focus());
-      }
-    }
-
-    function setSettingsOpen(open) {
-      settingsOpen = open;
-      els.settingsPanel.style.display = open ? "grid" : "none";
-      els.toggleSettings.textContent = open ? "S" : "S";
-      els.toggleSettings.title = open ? "Hide settings" : "Show settings";
-    }
-
-    function addBubble(role, text, sources) {
-      const div = document.createElement("div");
-      div.className = `bubble ${role === "user" ? "user" : "assistant"}`;
-      div.textContent = text;
-
-      if (sources && sources.length) {
-        const wrap = document.createElement("div");
-        wrap.className = "sources";
-        const label = document.createElement("div");
-        label.textContent = "Sources:";
-        wrap.appendChild(label);
-
-        sources.forEach((url) => {
-          const a = document.createElement("a");
-          a.href = url;
-          a.target = "_blank";
-          a.rel = "noopener noreferrer nofollow external";
-          a.textContent = url;
-          wrap.appendChild(a);
-        });
-
-        div.appendChild(wrap);
-      }
-
-      els.messages.appendChild(div);
-      els.messages.scrollTop = els.messages.scrollHeight;
-    }
-
-    function saveSettings() {
-      const settings = {
-        model: els.model.value,
-        apiBase: els.apiBase.value.trim(),
-        docLimit: Number.parseInt(els.docLimit.value, 10) || 2,
-        useDocs: els.useDocs.checked,
-        settingsOpen
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-      setStatus("Settings saved", "ok");
-    }
-
-    function loadSettings() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed.model) els.model.value = parsed.model;
-          if (parsed.apiBase) els.apiBase.value = parsed.apiBase;
-          if (parsed.docLimit) els.docLimit.value = String(parsed.docLimit);
-          if (typeof parsed.useDocs === "boolean") els.useDocs.checked = parsed.useDocs;
-          if (typeof parsed.settingsOpen === "boolean") setSettingsOpen(parsed.settingsOpen);
-        }
-      } catch (_) {
-        setStatus("Could not load saved settings", "warn");
-      }
-
-      if (!String(els.apiBase.value || "").trim()) {
-        els.apiBase.value = DEFAULT_API_BASE;
-      }
-    }
-
-    function resolveApiBase() {
-      const configured = String(els.apiBase.value || "").trim();
-      const base = configured || DEFAULT_API_BASE;
-      return base.replace(/\/+$/, "");
-    }
-
-    async function loadModels() {
-      const apiBase = resolveApiBase();
-      const url = apiBase ? `${apiBase}/api/jamf-agent/models` : "/api/jamf-agent/models";
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Model list request failed (${res.status})`);
-        const data = await res.json();
-        const models = Array.isArray(data?.models)
-          ? data.models.filter((m) => String(m?.ref || "").startsWith("minimax/"))
-          : [];
-        if (models.length === 0) {
-          setStatus("No MiniMax models available. Check backend provider keys.", "warn");
-          return;
-        }
-
-        const current = els.model.value;
-        els.model.innerHTML = "";
-        models.forEach((m) => {
-          const option = document.createElement("option");
-          option.value = m.ref;
-          option.textContent = m.label || m.ref;
-          els.model.appendChild(option);
-        });
-
-        if (models.some((m) => m.ref === current)) {
-          els.model.value = current;
-        } else if (models.some((m) => m.ref === DEFAULT_MODEL_REF)) {
-          els.model.value = DEFAULT_MODEL_REF;
-        } else {
-          els.model.value = models[0].ref;
-        }
-        setStatus("Connected to MiniMax model route", "ok");
-      } catch (_) {
-        setStatus("Could not load MiniMax models. Check API Base URL/backend.", "warn");
-      }
-    }
-
-    async function askBackend({ modelRef, question, useDocs, docLimit }) {
-      const apiBase = resolveApiBase();
-      const url = apiBase ? `${apiBase}/api/jamf-agent/chat` : "/api/jamf-agent/chat";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          modelRef,
-          question,
-          useDocs,
-          docLimit,
-          history
-        })
-      });
-
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`Server request failed: ${res.status} ${err.slice(0, 220)}`);
-      }
-
-      const data = await res.json();
-      if (!data?.ok || typeof data?.answer !== "string") {
-        throw new Error(data?.error || "Server returned no answer.");
-      }
-
-      return {
-        answer: data.answer,
-        sources: Array.isArray(data.sources) ? data.sources : []
-      };
-    }
-
-    async function onSubmit(event) {
-      event.preventDefault();
-      const question = els.prompt.value.trim();
-      if (!question) return;
-
-      const modelRef = els.model.value;
-      const useDocs = els.useDocs.checked;
-      const docLimit = Math.min(Math.max(Number.parseInt(els.docLimit.value, 10) || 2, 1), 4);
-
-      if (!chatOpen) setChatOpen(true);
-
-      addBubble("user", question);
-      els.prompt.value = "";
-      els.sendBtn.disabled = true;
-      setStatus("Working...", "warn");
-
-      try {
-        setStatus(useDocs ? "Searching JAMF docs..." : "Generating answer...", "warn");
-        const result = await askBackend({ modelRef, question, useDocs, docLimit });
-        addBubble("assistant", result.answer, result.sources);
-        history.push({ role: "user", content: question });
-        history.push({ role: "assistant", content: result.answer });
-        setStatus("Ready", "ok");
-      } catch (err) {
-        addBubble("assistant", `I hit an error: ${err.message}`);
-        setStatus("Request failed", "warn");
-      } finally {
-        els.sendBtn.disabled = false;
-      }
-    }
-
-    function initTemplateButtons() {
-      els.templateButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          els.prompt.value = button.dataset.template || "";
-          if (!chatOpen) setChatOpen(true);
-          els.prompt.focus();
-        });
-      });
-    }
-
-    els.saveBtn.addEventListener("click", saveSettings);
-    els.chatForm.addEventListener("submit", onSubmit);
-    els.chatLauncher.addEventListener("click", () => setChatOpen(!chatOpen));
-    els.toggleChat.addEventListener("click", () => setChatOpen(!chatOpen));
-    els.toggleSettings.addEventListener("click", () => setSettingsOpen(!settingsOpen));
-    els.apiBase.addEventListener("change", loadModels);
-
-    loadSettings();
-    initTemplateButtons();
-    setChatOpen(false);
-    loadModels();
-  </script>
+  <script defer src="../../../assets/site-assistant/site-assistant.js"></script>
 </body>
 </html>
