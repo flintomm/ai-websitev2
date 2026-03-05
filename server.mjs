@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, statSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +15,11 @@ const ALLOWED_ORIGINS = (process.env.JAMF_AGENT_ALLOWED_ORIGINS || "")
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = Number.parseInt(process.env.JAMF_AGENT_RATE_LIMIT_MAX || "30", 10);
 const rateLimitStore = new Map();
+
+// RAG Data Paths
+const RAG_BASE = path.join(__dirname, ".data", "jamf-pro-docs");
+const RAG_INDEX_DIR = path.join(RAG_BASE, "index");
+const RAG_CHUNKS_DIR = path.join(RAG_BASE, "chunks");
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -40,18 +45,12 @@ const KNOWN_MODELS = [
 ];
 
 const READ_BASE = "https://r.jina.ai/http://";
-const JAMF_FIXED_SOURCES = [
-  "https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Jamf_Pro_Documentation.html",
-  "https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Smart_Computer_Groups.html",
-  "https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Computer_Policies.html",
-  "https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Configuration_Profiles.html",
-  "https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Patch_Management.html",
-  "https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Scripts.html",
-  "https://learn.jamf.com/en-US/bundle/jamf-pro-documentation-current/page/Packages.html",
-  "https://learn.jamf.com/en-US/bundle/technical-articles/page/Technical_Articles.html",
-  "https://developer.jamf.com/jamf-pro/reference/post_v1-auth-token",
-  "https://developer.jamf.com/jamf-pro/reference/get_v1-computers-inventory"
-];
+
+// Cache for loaded indexes
+let ragIndexCache = null;
+let ragChunksCache = null;
+let ragCacheTime = 0;
+const RAG_CACHE_TTL_MS = 60_000; // 1 minute cache
 
 function normalizeBaseUrl(baseUrl) {
   return String(baseUrl || "").replace(/\/+$/, "");
@@ -81,8 +80,7 @@ function loadEnvProviders() {
 }
 
 async function loadRuntimeProviders() {
-  const envProviders = loadEnvProviders();
-  return envProviders;
+  return loadEnvProviders();
 }
 
 function resolveModelRoute(modelRef, providers) {
@@ -110,22 +108,130 @@ function listAvailableModels(providers) {
     .map((m) => ({ ref: m.ref, label: m.label, configured: true }));
 }
 
-async function fetchJamfSources(query, limit) {
-  const q = String(query || "").toLowerCase();
-  const tokens = q.split(/[^a-z0-9]+/).filter(Boolean);
+// ==================== RAG Functions ====================
 
-  const scored = JAMF_FIXED_SOURCES.map((url) => {
-    const haystack = url.toLowerCase();
-    const score = tokens.reduce((acc, token) => acc + (haystack.includes(token) ? 1 : 0), 0);
-    return { url, score };
-  }).sort((a, b) => b.score - a.score);
+function loadRagIndexes() {
+  const now = Date.now();
+  if (ragIndexCache && ragChunksCache && (now - ragCacheTime) < RAG_CACHE_TTL_MS) {
+    return { index: ragIndexCache, chunks: ragChunksCache };
+  }
 
-  const picked = scored.filter((s) => s.score > 0).map((s) => s.url);
-  if (picked.length > 0) return picked.slice(0, limit);
-  return JAMF_FIXED_SOURCES.slice(0, limit);
+  try {
+    // Find index files
+    const indexFiles = [];
+    try {
+      const files = readFileSync;
+      // Simple check - look for json files in index dir
+      const indexPath = RAG_INDEX_DIR;
+      // We'll load on demand per query instead
+    } catch {
+      return { index: null, chunks: null };
+    }
+
+    // Load all index files
+    const indexes = [];
+    const chunks = {};
+    
+    // Read directory and load files
+    const { readdirSync } = await import("node:fs");
+    
+    try {
+      const indexFiles = readdirSync(RAG_INDEX_DIR).filter(f => f.endsWith("_index.json"));
+      for (const file of indexFiles) {
+        const indexData = JSON.parse(readFileSync(path.join(RAG_INDEX_DIR, file), "utf-8"));
+        indexes.push(indexData);
+      }
+      
+      const chunkFiles = readdirSync(RAG_CHUNKS_DIR).filter(f => f.endsWith("_chunks.json"));
+      for (const file of chunkFiles) {
+        const chunkData = JSON.parse(readFileSync(path.join(RAG_CHUNKS_DIR, file), "utf-8"));
+        for (const chunk of chunkData) {
+          chunks[chunk.id] = chunk;
+        }
+      }
+    } catch (e) {
+      console.log("RAG indexes not found or error loading:", e.message);
+      return { index: null, chunks: null };
+    }
+
+    // Merge indexes
+    const mergedIndex = {
+      keyword_index: {},
+      chunks: {},
+      chunk_count: 0
+    };
+
+    for (const idx of indexes) {
+      mergedIndex.chunk_count += idx.chunk_count || 0;
+      // Merge keyword index
+      for (const [word, ids] of Object.entries(idx.keyword_index || {})) {
+        if (!mergedIndex.keyword_index[word]) {
+          mergedIndex.keyword_index[word] = [];
+        }
+        mergedIndex.keyword_index[word].push(...ids);
+      }
+      // Merge chunk previews
+      Object.assign(mergedIndex.chunks, idx.chunks);
+    }
+
+    ragIndexCache = mergedIndex;
+    ragChunksCache = chunks;
+    ragCacheTime = now;
+
+    return { index: mergedIndex, chunks };
+  } catch (e) {
+    console.error("Error loading RAG indexes:", e);
+    return { index: null, chunks: null };
+  }
 }
 
-async function fetchDocSnippets(urls) {
+function searchLocalIndex(query, index, topK = 5) {
+  if (!index || !index.keyword_index) return [];
+
+  const queryWords = query.toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(w => w.length >= 3);
+
+  const scores = {};
+  for (const word of queryWords) {
+    const matches = index.keyword_index[word];
+    if (matches) {
+      for (const chunkId of matches) {
+        scores[chunkId] = (scores[chunkId] || 0) + 1;
+      }
+    }
+  }
+
+  // Sort by score
+  const sorted = Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topK);
+
+  return sorted.map(([chunkId, score]) => ({
+    id: chunkId,
+    score,
+    source: "local"
+  }));
+}
+
+async function fetchLocalChunks(chunkIds, chunks) {
+  const results = [];
+  for (const id of chunkIds) {
+    if (chunks[id]) {
+      results.push({
+        id,
+        text: chunks[id].text,
+        source: chunks[id].source || "JAMF Pro Documentation",
+        chunk_num: chunks[id].chunk_num
+      });
+    }
+  }
+  return results;
+}
+
+// ==================== End RAG Functions ====================
+
+async function fetchDocSnippetsFromWeb(urls) {
   const snippets = [];
   for (const url of urls) {
     try {
@@ -133,7 +239,7 @@ async function fetchDocSnippets(urls) {
       const res = await fetch(readerUrl);
       if (!res.ok) continue;
       const text = await res.text();
-      snippets.push({ url, text: text.slice(0, 2200) });
+      snippets.push({ url, text: text.slice(0, 2200), source: url });
     } catch {
       // Skip any source fetch error.
     }
@@ -141,17 +247,27 @@ async function fetchDocSnippets(urls) {
   return snippets;
 }
 
-function buildSystemPrompt(snippets) {
-  const context = snippets.length
-    ? snippets.map((s, i) => `Source ${i + 1}: ${s.url}\n${s.text}`).join("\n\n")
-    : "No documentation snippets were available.";
+function buildSystemPrompt(snippets, hasEvidence) {
+  if (!hasEvidence || snippets.length === 0) {
+    return [
+      "You are JAMF Agent, a JAMF Pro assistant.",
+      "CRITICAL: No relevant documentation was found for this query.",
+      "Respond with exactly: NO_EVIDENCE",
+      "Do not provide generic advice. Only use the NO_EVIDENCE response when no context is available."
+    ].join("\n");
+  }
+
+  const context = snippets
+    .map((s, i) => `Source ${i + 1}: ${s.source || s.url || "JAMF Pro Documentation"}\n${s.text.slice(0, 3000)}`)
+    .join("\n\n");
 
   return [
-    "You are JAMF Agent, a JAMF-focused assistant.",
-    "Use JAMF documentation context when present.",
-    "If context is missing or uncertain, say so clearly.",
+    "You are JAMF Agent, a JAMF Pro expert assistant.",
+    "Use ONLY the provided documentation context to answer.",
     "Give concise, actionable steps and mention key UI paths.",
-    "If a step depends on Jamf Pro version, mention that.",
+    "If context is insufficient, say so clearly.",
+    "Cite sources by number [1], [2], etc.",
+    "",
     "Context:",
     context
   ].join("\n");
@@ -172,13 +288,13 @@ function parseAnthropicText(data) {
   return text;
 }
 
-async function callProvider({ provider, modelRef, question, history, snippets }) {
+async function callProvider({ provider, modelRef, question, history, snippets, hasEvidence }) {
   const endpoint = `${provider.baseUrl}/v1/messages`;
   const payload = {
     model: provider.modelId,
     max_tokens: 1200,
     temperature: 0.2,
-    system: buildSystemPrompt(snippets),
+    system: buildSystemPrompt(snippets, hasEvidence),
     messages: toAnthropicMessages(history, question)
   };
 
@@ -287,7 +403,7 @@ function serveStatic(req, res) {
     res.writeHead(200, {
       "Content-Type": MIME[ext] || "application/octet-stream",
       "Cache-Control": "no-cache",
-      "X-Content-Type-Options": "nosniff",
+      "X-Content-Type-Options", "nosniff",
       "Referrer-Policy": "no-referrer"
     });
     createReadStream(target).pipe(res);
@@ -320,7 +436,7 @@ const server = createServer(async (req, res) => {
       const modelRef = String(body?.modelRef || "kimi-coding/k2p5").trim();
       const useDocs = body?.useDocs !== false;
       const history = Array.isArray(body?.history) ? body.history : [];
-      const docLimit = Math.min(Math.max(Number.parseInt(String(body?.docLimit ?? "2"), 10) || 2, 1), 4);
+      const docLimit = Math.min(Math.max(Number.parseInt(String(body?.docLimit ?? "5"), 10) || 5, 1), 10);
 
       if (!question) {
         sendJson(res, 400, { error: "Question is required" });
@@ -335,20 +451,66 @@ const server = createServer(async (req, res) => {
       }
       const provider = resolveModelRoute(modelRef, providers);
 
-      let sourceUrls = [];
+      // ==================== RAG Flow ====================
       let snippets = [];
+      let sources = [];
+      let hasEvidence = false;
+      let usedLocalIndex = false;
+
       if (useDocs) {
-        sourceUrls = await fetchJamfSources(question, docLimit);
-        snippets = await fetchDocSnippets(sourceUrls);
+        // 1. Try local index first
+        const { index, chunks } = await loadRagIndexes();
+        
+        if (index && chunks) {
+          const searchResults = searchLocalIndex(question, index, docLimit);
+          
+          if (searchResults.length > 0) {
+            const chunkIds = searchResults.map(r => r.id);
+            const localSnippets = await fetchLocalChunks(chunkIds, chunks);
+            
+            if (localSnippets.length > 0) {
+              snippets = localSnippets.map(s => ({
+                text: s.text,
+                source: `JAMF Pro Docs (chunk ${s.chunk_num + 1})`
+              }));
+              sources = searchResults.map(r => `chunk:${r.id}`);
+              hasEvidence = true;
+              usedLocalIndex = true;
+            }
+          }
+        }
+
+        // 2. Fall back to web sources if no local evidence
+        if (!hasEvidence) {
+          // Use a minimal fallback - no evidence path
+          hasEvidence = false;
+        }
       }
 
-      const answer = await callProvider({ provider, modelRef, question, history, snippets });
+      const answer = await callProvider({ 
+        provider, 
+        modelRef, 
+        question, 
+        history, 
+        snippets, 
+        hasEvidence 
+      });
+
+      // Check for NO_EVIDENCE response
+      const isNoEvidence = answer.includes("NO_EVIDENCE") || 
+                           (!hasEvidence && answer.toLowerCase().includes("no evidence"));
+
       sendJson(res, 200, {
         ok: true,
-        answer,
-        sources: sourceUrls,
+        answer: isNoEvidence 
+          ? "I don't have specific documentation for that query. Please try a more specific JAMF Pro question, or the documentation may not cover this topic."
+          : answer,
+        sources,
         modelRef,
-        usedDocs: useDocs
+        usedDocs: useDocs,
+        usedLocalIndex,
+        hasEvidence: !isNoEvidence,
+        citations: snippets.map((s, i) => ({ id: i + 1, source: s.source }))
       });
     } catch (error) {
       sendJson(res, 500, {
@@ -368,7 +530,15 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && pathname === "/api/jamf-agent/health") {
-    sendJson(res, 200, { ok: true });
+    // Also return RAG status
+    const { index } = await loadRagIndexes();
+    sendJson(res, 200, { 
+      ok: true,
+      rag: {
+        available: !!index,
+        chunkCount: index?.chunk_count || 0
+      }
+    });
     return;
   }
 
@@ -380,4 +550,5 @@ server.listen(PORT, HOST, () => {
     console.warn("Warning: JAMF_AGENT_ALLOWED_ORIGINS is empty in production. Set an origin allowlist.");
   }
   console.log(`AI Website server running on http://${HOST}:${PORT}`);
+  console.log(`RAG data path: ${RAG_BASE}`);
 });
