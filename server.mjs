@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createReadStream, statSync, readFileSync } from "node:fs";
+import { createReadStream, statSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
@@ -20,7 +20,7 @@ const rateLimitStore = new Map();
 // RAG Data Paths
 const RAG_BASE = path.join(__dirname, ".data", "jamf-pro-docs");
 const RAG_INDEX_DIR = path.join(RAG_BASE, "index");
-const RAG_CHUNKS_DIR = path.join(RAG_BASE, "chunks");
+const MAX_INDEX_FILE_BYTES = 300 * 1024 * 1024;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -49,7 +49,6 @@ const READ_BASE = "https://r.jina.ai/http://";
 
 // Cache for loaded indexes
 let ragIndexCache = null;
-let ragChunksCache = null;
 let ragCacheTime = 0;
 const RAG_CACHE_TTL_MS = 60_000; // 1 minute cache
 
@@ -113,46 +112,32 @@ function listAvailableModels(providers) {
 
 async function loadRagIndexes() {
   const now = Date.now();
-  if (ragIndexCache && ragChunksCache && (now - ragCacheTime) < RAG_CACHE_TTL_MS) {
-    return { index: ragIndexCache, chunks: ragChunksCache };
+  if (ragIndexCache && (now - ragCacheTime) < RAG_CACHE_TTL_MS) {
+    return { index: ragIndexCache };
   }
 
   try {
-    // Find index files
-    const indexFiles = [];
-    try {
-      const files = readFileSync;
-      // Simple check - look for json files in index dir
-      const indexPath = RAG_INDEX_DIR;
-      // We'll load on demand per query instead
-    } catch {
-      return { index: null, chunks: null };
-    }
-
-    // Load all index files
     const indexes = [];
-    const chunks = {};
-    
-    // Read directory and load files
-    const { readdirSync } = await import("node:fs");
-    
+
     try {
       const indexFiles = readdirSync(RAG_INDEX_DIR).filter(f => f.endsWith("_index.json"));
       for (const file of indexFiles) {
-        const indexData = JSON.parse(readFileSync(path.join(RAG_INDEX_DIR, file), "utf-8"));
-        indexes.push(indexData);
-      }
-      
-      const chunkFiles = readdirSync(RAG_CHUNKS_DIR).filter(f => f.endsWith("_chunks.json"));
-      for (const file of chunkFiles) {
-        const chunkData = JSON.parse(readFileSync(path.join(RAG_CHUNKS_DIR, file), "utf-8"));
-        for (const chunk of chunkData) {
-          chunks[chunk.id] = chunk;
+        const filePath = path.join(RAG_INDEX_DIR, file);
+        const stats = statSync(filePath);
+        if (stats.size > MAX_INDEX_FILE_BYTES) {
+          console.warn(`Skipping oversized index file: ${file} (${stats.size} bytes)`);
+          continue;
         }
+        const indexData = JSON.parse(readFileSync(filePath, "utf-8"));
+        indexes.push(indexData);
       }
     } catch (e) {
       console.log("RAG indexes not found or error loading:", e.message);
-      return { index: null, chunks: null };
+      return { index: null };
+    }
+
+    if (indexes.length === 0) {
+      return { index: null };
     }
 
     // Merge indexes
@@ -176,13 +161,12 @@ async function loadRagIndexes() {
     }
 
     ragIndexCache = mergedIndex;
-    ragChunksCache = chunks;
     ragCacheTime = now;
 
-    return { index: mergedIndex, chunks };
+    return { index: mergedIndex };
   } catch (e) {
     console.error("Error loading RAG indexes:", e);
-    return { index: null, chunks: null };
+    return { index: null };
   }
 }
 
@@ -215,15 +199,16 @@ function searchLocalIndex(query, index, topK = 5) {
   }));
 }
 
-async function fetchLocalChunks(chunkIds, chunks) {
+async function fetchLocalChunks(chunkIds, index) {
   const results = [];
   for (const id of chunkIds) {
-    if (chunks[id]) {
+    const chunk = index?.chunks?.[id];
+    if (chunk) {
       results.push({
         id,
-        text: chunks[id].text,
-        source: chunks[id].source || "JAMF Pro Documentation",
-        chunk_num: chunks[id].chunk_num
+        text: chunk.text,
+        source: chunk.source || "JAMF Pro Documentation",
+        chunk_num: Number.isFinite(chunk.chunk_num) ? chunk.chunk_num : null
       });
     }
   }
@@ -460,19 +445,21 @@ const server = createServer(async (req, res) => {
 
       if (useDocs) {
         // 1. Try local index first
-        const { index, chunks } = await loadRagIndexes();
+        const { index } = await loadRagIndexes();
         
-        if (index && chunks) {
+        if (index) {
           const searchResults = searchLocalIndex(question, index, docLimit);
           
           if (searchResults.length > 0) {
             const chunkIds = searchResults.map(r => r.id);
-            const localSnippets = await fetchLocalChunks(chunkIds, chunks);
+            const localSnippets = await fetchLocalChunks(chunkIds, index);
             
             if (localSnippets.length > 0) {
               snippets = localSnippets.map(s => ({
                 text: s.text,
-                source: `JAMF Pro Docs (chunk ${s.chunk_num + 1})`
+                source: Number.isFinite(s.chunk_num)
+                  ? `JAMF Pro Docs (chunk ${s.chunk_num + 1})`
+                  : "JAMF Pro Docs"
               }));
               sources = searchResults.map(r => `chunk:${r.id}`);
               hasEvidence = true;

@@ -67,55 +67,58 @@ def normalize_text(raw_text: str, source: str) -> Dict[str, Any]:
         "line_count": len(text.split('\n'))
     }
 
-def chunk_text(normalized: Dict[str, Any], chunk_size: int = 1000, overlap: int = 200) -> List[Dict[str, Any]]:
-    """Split text into overlapping chunks with metadata."""
-    text = normalized["text"]
+def chunk_text(normalized: Dict[str, Any], chunk_size: int = 1200, overlap: int = 200) -> List[Dict[str, Any]]:
+    """Split text into bounded overlapping chunks with metadata.
+
+    Uses a character sliding window with soft boundary snapping to avoid
+    recursive overlap growth and unbounded chunk inflation.
+    """
+    text = normalized["text"].strip()
+    if not text:
+        return []
+
     chunks = []
-    
-    # Simple paragraph-aware chunking
-    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-    current_chunk = []
-    current_size = 0
     chunk_num = 0
-    
-    for para in paragraphs:
-        para_size = len(para)
-        
-        if current_size + para_size > chunk_size and current_chunk:
-            # Save current chunk
-            chunk_text = '\n\n'.join(current_chunk)
-            chunk_id = hashlib.md5(f"{normalized['source']}:{chunk_num}".encode()).hexdigest()[:12]
-            chunks.append({
-                "id": chunk_id,
-                "chunk_num": chunk_num,
-                "source": normalized["source"],
-                "text": chunk_text,
-                "char_count": len(chunk_text),
-                "created_at": datetime.now().isoformat()
-            })
-            chunk_num += 1
-            
-            # Start new chunk with overlap
-            overlap_text = '\n\n'.join(current_chunk[-2:]) if len(current_chunk) >= 2 else current_chunk[-1] if current_chunk else ""
-            current_chunk = [overlap_text, para] if overlap_text else [para]
-            current_size = len(overlap_text) + para_size if overlap_text else para_size
-        else:
-            current_chunk.append(para)
-            current_size += para_size
-    
-    # Don't forget the last chunk
-    if current_chunk:
-        chunk_text = '\n\n'.join(current_chunk)
-        chunk_id = hashlib.md5(f"{normalized['source']}:{chunk_num}".encode()).hexdigest()[:12]
+    cursor = 0
+    text_len = len(text)
+    min_snap = max(1, int(chunk_size * 0.6))
+
+    while cursor < text_len:
+        max_end = min(cursor + chunk_size, text_len)
+        end = max_end
+
+        # Prefer snapping to a natural boundary near the right edge.
+        if max_end < text_len:
+            para_break = text.rfind("\n\n", cursor + min_snap, max_end)
+            sentence_break = text.rfind(". ", cursor + min_snap, max_end)
+            if para_break != -1:
+                end = para_break + 2
+            elif sentence_break != -1:
+                end = sentence_break + 2
+
+        chunk_body = text[cursor:end].strip()
+        if not chunk_body:
+            break
+
+        chunk_id = hashlib.md5(f"{normalized['source']}:{chunk_num}:{cursor}:{end}".encode()).hexdigest()[:12]
         chunks.append({
             "id": chunk_id,
             "chunk_num": chunk_num,
             "source": normalized["source"],
-            "text": chunk_text,
-            "char_count": len(chunk_text),
+            "text": chunk_body,
+            "char_count": len(chunk_body),
+            "start_char": cursor,
+            "end_char": end,
             "created_at": datetime.now().isoformat()
         })
-    
+        chunk_num += 1
+
+        if end >= text_len:
+            break
+
+        next_cursor = max(end - overlap, cursor + 1)
+        cursor = next_cursor
+
     return chunks
 
 def build_index(chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -125,7 +128,15 @@ def build_index(chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
         "chunk_count": len(chunks),
         "sources": list(set(c["source"] for c in chunks)),
         "keyword_index": {},
-        "chunks": {c["id"]: {"text": c["text"][:200] + "...", "source": c["source"]} for c in chunks}
+        "chunks": {
+            c["id"]: {
+                "text": c["text"][:600] + ("..." if len(c["text"]) > 600 else ""),
+                "source": c["source"],
+                "chunk_num": c["chunk_num"],
+                "char_count": c["char_count"]
+            }
+            for c in chunks
+        }
     }
     
     # Build inverted index
