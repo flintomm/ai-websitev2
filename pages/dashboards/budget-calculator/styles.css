@@ -1,0 +1,415 @@
+/* ─── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --bg:          #0c0c0c;
+  --surface:     #191919;
+  --surface-2:   #212121;
+  --line:        rgba(255,255,255,0.09);
+  --line-strong: rgba(255,255,255,0.26);
+  --text:        #f0f0f0;
+  --muted:       #676767;
+  --accent:      #f4e04a;
+  --accent-dim:  rgba(244,224,74,0.13);
+  --good:        #41e08b;
+  --bad:         #ff3d5a;
+  --neutral:     #888;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --sans: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.bg-grid {
+  position: fixed; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ─── Nav ────────────────────────────────────────────────────── */
+.site-nav {
+  padding: 0.62rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.back-link {
+  text-decoration: none; color: var(--muted);
+  font-family: var(--mono); font-size: 0.58rem;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  transition: color 0.1s;
+}
+.back-link:hover { color: var(--accent); }
+
+.site-tag {
+  font-family: var(--mono); font-size: 0.54rem;
+  letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+header, main { width: min(1320px, 96vw); margin: 0 auto; position: relative; }
+
+header {
+  padding: 0.75rem 0 0.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.45rem;
+}
+
+.kicker {
+  font-family: var(--mono); font-size: 0.54rem;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1 {
+  font-size: clamp(1.5rem, 2.9vw, 2.4rem);
+  font-weight: 700; letter-spacing: -0.03em; margin-top: 0.1rem;
+}
+
+header > p {
+  color: var(--muted); font-size: 0.72rem;
+  margin-top: 0.2rem; line-height: 1.4;
+}
+
+/* ─── Strips ─────────────────────────────────────────────────── */
+.tech-strip, .flow-strip {
+  padding: 0.3rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 0.28rem;
+}
+
+.tech-strip span {
+  font-family: var(--mono); font-size: 0.52rem;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--line-strong);
+  padding: 0.11rem 0.36rem;
+}
+
+.flow-strip span {
+  font-family: var(--mono); font-size: 0.5rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(65,224,139,0.75); border: 1px solid rgba(65,224,139,0.22);
+  padding: 0.11rem 0.36rem;
+}
+
+/* ─── Grid ───────────────────────────────────────────────────── */
+main {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.5rem;
+  padding: 0.45rem 0 2rem;
+}
+
+.setup-card    { grid-column: span 3; }
+.income-card   { grid-column: span 3; }
+.finale-card   { grid-column: span 6; }
+.expense-card  { grid-column: span 5; }
+.viz-card      { grid-column: span 4; }
+.insights-card { grid-column: span 3; }
+
+/* ─── Cards — brutalist core ─────────────────────────────────── */
+.card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0.62rem;
+  display: flex; flex-direction: column; min-height: 0;
+  box-shadow: 3px 3px 0 var(--accent-dim);
+  overflow: hidden;
+  transition: box-shadow 110ms ease, border-color 110ms ease;
+  position: relative;
+}
+
+.card:hover {
+  box-shadow: 5px 5px 0 var(--accent-dim);
+  border-color: var(--line-strong);
+}
+
+/* ─── Drag & Drop ────────────────────────────────────────────── */
+.card-head { cursor: grab; }
+.card-head:active { cursor: grabbing; }
+body.drag-active,
+body.drag-active .card-head { cursor: grabbing; }
+body.drag-active * { user-select: none; }
+body.resize-active { cursor: nwse-resize; }
+body.resize-active * { user-select: none; }
+
+.card.is-dragging {
+  opacity: 0.35;
+  box-shadow: none;
+  transform: none;
+}
+
+.card.drop-target {
+  border-color: var(--accent);
+  box-shadow: 4px 4px 0 rgba(244,224,74,0.35);
+  transform: none;
+}
+
+.card.is-resizing {
+  border-color: var(--accent);
+  box-shadow: 6px 6px 0 rgba(244,224,74,0.28);
+}
+
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.88;
+  z-index: 9999;
+  box-shadow: 8px 8px 0 rgba(244,224,74,0.32);
+  border: 1px solid var(--accent);
+  background: var(--surface);
+  padding: 0.62rem;
+  border-style: dashed;
+  transition: none;
+}
+
+.resize-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  padding: 0;
+  background:
+    linear-gradient(135deg, transparent 0 40%, rgba(244,224,74,0.75) 40% 46%, transparent 46% 52%, rgba(244,224,74,0.75) 52% 58%, transparent 58% 100%);
+  cursor: nwse-resize;
+  opacity: 0.85;
+  z-index: 3;
+}
+
+.resize-grip:hover {
+  opacity: 1;
+}
+
+/* Finale card gets accent border — most important card */
+.finale-card {
+  border-color: rgba(244,224,74,0.22);
+  box-shadow: 4px 4px 0 rgba(244,224,74,0.18);
+}
+.finale-card:hover { box-shadow: 6px 6px 0 rgba(244,224,74,0.28); }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.4rem; margin-bottom: 0.4rem;
+  flex-shrink: 0;
+}
+
+.card-head h2 {
+  font-family: var(--mono); font-size: 0.66rem; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+
+.card-head p { font-family: var(--mono); font-size: 0.58rem; color: var(--muted); }
+
+/* ─── Form Controls ──────────────────────────────────────────── */
+.fields { display: grid; gap: 0.38rem; }
+.fields.two-col   { grid-template-columns: repeat(2, 1fr); }
+.fields.three-col { grid-template-columns: repeat(3, 1fr); }
+
+label {
+  display: grid; gap: 0.16rem;
+  font-family: var(--mono); font-size: 0.54rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+
+input, select, button { font: inherit; line-height: 1.2; border-radius: 0; }
+
+input, select {
+  width: 100%;
+  background: var(--surface-2); border: 1px solid var(--line);
+  color: var(--text); padding: 0.36rem 0.46rem;
+  font-family: var(--mono);
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  /* NO box-shadow — brutalist: hard border only */
+}
+
+/* Primary: yellow, black text, press-down on :active */
+.btn {
+  border: 1.5px solid var(--accent); background: var(--accent); color: #0c0c0c;
+  padding: 0.36rem 0.65rem;
+  font-family: var(--mono); font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(255,255,255,0.12);
+  transition: transform 70ms, box-shadow 70ms;
+  border-radius: 0;
+}
+.btn:hover { opacity: 0.93; }
+.btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+.btn.ghost {
+  background: transparent; border-color: var(--line-strong);
+  color: var(--muted); box-shadow: none;
+}
+.btn.ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.45); opacity: 1; }
+.btn.ghost:active { transform: translate(2px, 2px); }
+
+/* ─── Finale Card — hero stat ────────────────────────────────── */
+.finale-label {
+  font-family: var(--mono); font-size: 0.52rem;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+  margin: 0.1rem 0 0.28rem;
+}
+
+#finale-value {
+  font-family: var(--mono);
+  font-size: clamp(2.1rem, 4.2vw, 3.4rem);
+  font-weight: 700; letter-spacing: -0.02em; line-height: 1;
+}
+
+.finale-card.ok      #finale-value { color: var(--good); }
+.finale-card.bad     #finale-value { color: var(--bad); }
+.finale-card.neutral #finale-value { color: var(--text); }
+
+.pill {
+  display: inline-flex; align-items: center;
+  margin: 0.32rem 0 0.48rem;
+  padding: 0.18rem 0.52rem;
+  border: 1.5px solid currentColor;
+  font-family: var(--mono); font-size: 0.56rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border-radius: 0;
+}
+
+.pill.ok      { color: var(--good); }
+.pill.bad     { color: var(--bad); animation: pulse-bad 2.2s ease-in-out infinite; }
+.pill.neutral { color: var(--neutral); }
+
+@keyframes pulse-bad {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* ─── Stats Grid ─────────────────────────────────────────────── */
+.stats { display: grid; gap: 0.36rem; }
+.stats.four { grid-template-columns: repeat(4, 1fr); }
+.stats.two  { grid-template-columns: repeat(2, 1fr); }
+
+.stat {
+  border: 1px solid var(--line); background: var(--surface-2);
+  padding: 0.38rem 0.5rem;
+}
+
+.stat p {
+  font-family: var(--mono); font-size: 0.5rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+
+.stat strong {
+  display: block; font-family: var(--mono);
+  font-size: 0.82rem; font-weight: 600; margin-top: 0.14rem;
+}
+
+/* ─── Tables ─────────────────────────────────────────────────── */
+.table-wrap {
+  border: 1px solid var(--line); overflow: auto;
+  flex: 1; min-height: 0; background: rgba(0,0,0,0.22);
+}
+.table-wrap.compact { max-height: 206px; }
+
+table { width: 100%; border-collapse: collapse; }
+.expense-card  table { min-width: 520px; }
+.insights-card table,
+.income-card   table { min-width: 290px; }
+
+th, td {
+  padding: 0.28rem 0.36rem; text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.055); font-size: 0.62rem;
+}
+
+th {
+  position: sticky; top: 0; z-index: 1;
+  font-family: var(--mono); font-size: 0.5rem;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  background: var(--surface);
+}
+
+td { color: var(--text); }
+
+tr:hover td { background: rgba(255,255,255,0.022); }
+
+td input { padding: 0.22rem 0.3rem; font-size: 0.6rem; }
+
+.row-remove {
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  font-family: var(--mono); font-size: 0.48rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 0.18rem 0.32rem; cursor: pointer; border-radius: 0;
+  transition: color 0.1s, border-color 0.1s;
+}
+.row-remove:hover {
+  color: var(--bad); border-color: rgba(255,61,90,0.42);
+}
+
+/* ─── Viz + Chart ────────────────────────────────────────────── */
+.compact-controls { margin-bottom: 0.4rem; }
+
+.viz-canvas { min-height: 0; flex: 1; }
+
+.viz-canvas svg { display: block; width: 100%; height: auto; }
+
+.axis-label, .bar-label {
+  fill: #5d7a96; font-size: 10px;
+  font-family: "IBM Plex Mono";
+}
+
+.viz-legend {
+  border-top: 1px solid var(--line);
+  margin-top: 0.28rem; padding-top: 0.28rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0.26rem; max-height: 68px; overflow: auto;
+}
+
+.legend-item {
+  display: flex; align-items: center; gap: 0.38rem;
+  font-family: var(--mono); font-size: 0.56rem; color: var(--muted);
+}
+
+/* Square dots — no border-radius, brutalist */
+.dot { width: 8px; height: 8px; flex-shrink: 0; }
+
+/* ─── Utilities ──────────────────────────────────────────────── */
+.value-good { color: var(--good); }
+.value-bad  { color: var(--bad); }
+
+@keyframes rowEnter {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+tr.row-new { animation: rowEnter 170ms ease-out forwards; }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (min-width: 1100px) {
+  body { overflow: auto; }
+  main { height: auto; }
+}
+
+@media (max-width: 1099px) {
+  main { grid-template-columns: 1fr; height: auto; }
+  .setup-card, .income-card, .finale-card,
+  .expense-card, .viz-card, .insights-card { grid-column: auto; }
+  .viz-canvas { height: 280px; }
+}
+
+@media (max-width: 720px) {
+  .site-nav, .tech-strip, .flow-strip { padding-left: 0.8rem; padding-right: 0.8rem; }
+  header, main { width: 97vw; }
+  .fields.two-col, .fields.three-col,
+  .stats.four, .stats.two { grid-template-columns: 1fr; }
+}
