@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createReadStream, statSync, readFileSync, readdirSync } from "node:fs";
+import { createReadStream, statSync, readFileSync, readdirSync, mkdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
@@ -7,7 +7,7 @@ import "dotenv/config";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = Number.parseInt(process.env.PORT || "8080", 10);
-const HOST = process.env.HOST || "127.0.0.1";
+const HOST = process.env.HOST || "0.0.0.0";
 const NODE_ENV = process.env.NODE_ENV || "development";
 const ALLOWED_ORIGINS = (process.env.JAMF_AGENT_ALLOWED_ORIGINS || "")
   .split(",")
@@ -534,6 +534,21 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
+  // Create RAG directories if they don't exist
+  try {
+    if (!existsSync(RAG_BASE)) {
+      mkdirSync(RAG_BASE, { recursive: true });
+      mkdirSync(path.join(RAG_BASE, "raw"), { recursive: true });
+      mkdirSync(path.join(RAG_BASE, "normalized"), { recursive: true });
+      mkdirSync(path.join(RAG_BASE, "chunks"), { recursive: true });
+      mkdirSync(path.join(RAG_BASE, "index"), { recursive: true });
+      mkdirSync(path.join(RAG_BASE, "manifests"), { recursive: true });
+      console.log("Created RAG data directories");
+    }
+  } catch (e) {
+    console.warn("Could not create RAG directories:", e.message);
+  }
+
   if (NODE_ENV === "production" && ALLOWED_ORIGINS.length === 0) {
     console.warn("Warning: JAMF_AGENT_ALLOWED_ORIGINS is empty in production. Set an origin allowlist.");
   }
