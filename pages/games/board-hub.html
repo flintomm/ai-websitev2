@@ -18,10 +18,10 @@
         --panel: #0d0d0d;
         --line: rgba(255,255,255,0.08);
         --line-hi: rgba(255,255,255,0.2);
-        --accent: #39ff14;
-        --neon-b: #00f0ff;
-        --neon-c: #ff3399;
-        --neon-d: #f7e36c;
+        --accent: #d90429;
+        --neon-b: #f2f2f2;
+        --neon-c: #a0a0a0;
+        --neon-d: #d90429;
       }
 
       * { box-sizing: border-box; }
@@ -151,7 +151,7 @@
 
       .tab.active {
         border-color: var(--accent);
-        background: rgba(57,255,20,0.06);
+        background: rgba(217,4,41,0.08);
         color: var(--accent);
         transform: translateY(-2px);
       }
@@ -202,7 +202,7 @@
 
       .board-cell.active {
         border-color: var(--accent);
-        box-shadow: inset 0 0 0 1px var(--accent), 0 0 10px rgba(57,255,20,0.35);
+        box-shadow: inset 0 0 0 1px var(--accent);
       }
 
       /* ===== PIECES ===== */
@@ -222,13 +222,13 @@
       .piece.light {
         background: var(--neon-b);
         color: #000;
-        box-shadow: 0 0 8px var(--neon-b), 0 0 22px rgba(0,240,255,0.35);
+        box-shadow: none;
       }
 
       .piece.dark {
         background: var(--neon-c);
         color: #000;
-        box-shadow: 0 0 8px var(--neon-c), 0 0 22px rgba(255,51,153,0.35);
+        box-shadow: none;
       }
 
       .piece.king::after {
@@ -263,13 +263,13 @@
 
       .cell.is-x {
         color: var(--neon-b);
-        text-shadow: 0 0 14px var(--neon-b), 0 0 35px rgba(0,240,255,0.4);
+        text-shadow: none;
         border-color: rgba(0,240,255,0.2);
       }
 
       .cell.is-o {
         color: var(--neon-c);
-        text-shadow: 0 0 14px var(--neon-c), 0 0 35px rgba(255,51,153,0.4);
+        text-shadow: none;
         border-color: rgba(255,51,153,0.2);
       }
 
@@ -301,7 +301,7 @@
 
       .btn:hover {
         opacity: 0.88;
-        box-shadow: 0 0 14px rgba(57,255,20,0.45);
+        box-shadow: none;
       }
 
       .btn.secondary {

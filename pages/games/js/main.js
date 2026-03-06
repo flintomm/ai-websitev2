@@ -391,7 +391,7 @@ function drawEnemies() {
 
     const barW = 42, barH = 6;
     const ratio = clamp(enemy.hp / enemy.maxHp, 0, 1);
-    const hpColor = ratio > 0.6 ? "#39ff14" : ratio > 0.3 ? "#f7c46c" : "#ff3399";
+    const hpColor = ratio > 0.6 ? "#d90429" : ratio > 0.3 ? "#8a8a8a" : "#2f2f2f";
     ctx.fillStyle = "rgba(0,0,0,0.75)";
     ctx.fillRect(enemy.x - barW / 2, enemy.y - 28, barW, barH);
     ctx.fillStyle = hpColor;
@@ -419,7 +419,7 @@ function drawPlacementGhost() {
   const pos = gridToPixel(cell.x, cell.y);
   const towerData = TOWERS[state.selectedTower];
   const valid = !isOnPath(cell) && !state.towers.some((t) => t.cell.x === cell.x && t.cell.y === cell.y);
-  const color = valid ? "#39ff14" : "#ff3399";
+  const color = valid ? "#d90429" : "#2f2f2f";
   ctx.save();
   // Cell highlight
   ctx.fillStyle = color + "18";

@@ -18,7 +18,7 @@
         --border-hi: rgba(255,255,255,0.22);
         --text: #fff;
         --muted: rgba(255,255,255,0.42);
-        --accent: #39ff14;
+        --accent: #d90429;
         --font: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
       }
 
@@ -165,7 +165,7 @@
       }
 
       .controls button.warning:hover {
-        box-shadow: 0 0 16px rgba(57,255,20,0.5);
+        box-shadow: none;
         opacity: 0.9;
       }
 
@@ -188,8 +188,8 @@
       }
 
       .controls button.danger:hover {
-        color: #ff3399;
-        border-color: rgba(255,51,153,0.3);
+        color: #d90429;
+        border-color: rgba(217,4,41,0.35);
       }
 
       /* ===== TOWER CARDS ===== */
@@ -282,10 +282,10 @@
         text-transform: none;
       }
 
-      .chip.credits strong { color: #39ff14; text-shadow: 0 0 8px rgba(57,255,20,0.6); }
-      .chip.wave    strong { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
-      .chip.enemies strong { color: #f7c46c; text-shadow: 0 0 8px rgba(247,196,108,0.5); }
-      .chip.lives   strong { color: #ff3399; text-shadow: 0 0 8px rgba(255,51,153,0.6); }
+      .chip.credits strong { color: #d90429; text-shadow: none; }
+      .chip.wave    strong { color: #f2f2f2; text-shadow: none; }
+      .chip.enemies strong { color: #9a9a9a; text-shadow: none; }
+      .chip.lives   strong { color: #2f2f2f; text-shadow: none; }
 
       .status-pill {
         padding: 0.3rem 0.65rem;
@@ -297,8 +297,8 @@
         text-transform: uppercase;
         transition: color 0.3s, border-color 0.3s;
       }
-      .status-pill.build { color: #39ff14; border-color: rgba(57,255,20,0.45); }
-      .status-pill.live  { color: #ff3399; border-color: rgba(255,51,153,0.45); }
+      .status-pill.build { color: #d90429; border-color: rgba(217,4,41,0.45); }
+      .status-pill.live  { color: #2f2f2f; border-color: rgba(47,47,47,0.55); }
 
       .note {
         color: var(--muted);
