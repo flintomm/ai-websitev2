@@ -19,6 +19,11 @@ const ALLOWED_ORIGINS = (process.env.SITE_CHAT_ALLOWED_ORIGINS || "")
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = Number.parseInt(process.env.SITE_CHAT_RATE_LIMIT_MAX || "30", 10);
 const rateLimitStore = new Map();
+const SESSION_LIMIT_WINDOW_MS = 60 * 60_000;
+const SESSION_LIMIT_MAX = Number.parseInt(process.env.SITE_CHAT_SESSION_LIMIT_MAX || "40", 10);
+const SESSION_MIN_INTERVAL_MS = Number.parseInt(process.env.SITE_CHAT_MIN_INTERVAL_MS || "2000", 10);
+const sessionLimitStore = new Map();
+const CHAT_MAX_TOTAL_CHARS = Number.parseInt(process.env.SITE_CHAT_MAX_CONTEXT_CHARS || "7000", 10);
 
 const MINIMAX_BASE_URL = String(process.env.MINIMAX_BASE_URL || "https://api.minimax.io/anthropic").replace(/\/+$/, "");
 const MINIMAX_API_KEY = String(process.env.MINIMAX_API_KEY || "").trim();
@@ -98,9 +103,39 @@ function sanitizeMessages(messages) {
   if (!Array.isArray(messages)) return [];
   return messages
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-    .map((m) => ({ role: m.role, content: m.content.trim().slice(0, 4000) }))
+    .map((m) => ({ role: m.role, content: m.content.trim().slice(0, 1200) }))
     .filter((m) => Boolean(m.content))
     .slice(-16);
+}
+
+function trimMessagesByBudget(messages, maxChars = CHAT_MAX_TOTAL_CHARS) {
+  let total = 0;
+  const kept = [];
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i];
+    total += msg.content.length;
+    if (total > maxChars) break;
+    kept.push(msg);
+  }
+  return kept.reverse();
+}
+
+function enforceSessionGuardrails(sessionId) {
+  const now = Date.now();
+  const current = sessionLimitStore.get(sessionId);
+  if (!current || now - current.windowStart > SESSION_LIMIT_WINDOW_MS) {
+    sessionLimitStore.set(sessionId, { windowStart: now, count: 1, lastAt: now });
+    return { ok: true };
+  }
+  if ((now - current.lastAt) < SESSION_MIN_INTERVAL_MS) {
+    return { ok: false, status: 429, error: "You're sending messages too quickly. Please wait a moment." };
+  }
+  if (current.count >= SESSION_LIMIT_MAX) {
+    return { ok: false, status: 429, error: "Session message limit reached. Please try again later." };
+  }
+  current.count += 1;
+  current.lastAt = now;
+  return { ok: true };
 }
 
 function sanitizePage(page) {
@@ -154,8 +189,8 @@ async function callMiniMax({ modelRef, messages, page }) {
   const endpoint = `${MINIMAX_BASE_URL}/v1/messages`;
   const payload = {
     model: minimaxModelId(modelRef),
-    max_tokens: 900,
-    temperature: 0.3,
+    max_tokens: Number.parseInt(process.env.SITE_CHAT_MAX_TOKENS || "500", 10),
+    temperature: Number.parseFloat(process.env.SITE_CHAT_TEMPERATURE || "0.2"),
     system: buildSystemPrompt(page),
     messages
   };
@@ -239,7 +274,13 @@ const server = createServer(async (req, res) => {
         minimaxConfigured: Boolean(MINIMAX_API_KEY),
         baseUrl: MINIMAX_BASE_URL
       },
-      models: MODEL_ALLOWLIST
+      models: MODEL_ALLOWLIST,
+      guardrails: {
+        sessionLimitMax: SESSION_LIMIT_MAX,
+        sessionLimitWindowMs: SESSION_LIMIT_WINDOW_MS,
+        minIntervalMs: SESSION_MIN_INTERVAL_MS,
+        maxContextChars: CHAT_MAX_TOTAL_CHARS
+      }
     });
     return;
   }
@@ -274,7 +315,14 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const assistantText = await callMiniMax({ modelRef, messages, page });
+      const sessionRule = enforceSessionGuardrails(sessionId);
+      if (!sessionRule.ok) {
+        sendJson(res, sessionRule.status, { ok: false, error: sessionRule.error });
+        return;
+      }
+
+      const boundedMessages = trimMessagesByBudget(messages);
+      const assistantText = await callMiniMax({ modelRef, messages: boundedMessages, page });
       sendJson(res, 200, {
         ok: true,
         model: modelRef,

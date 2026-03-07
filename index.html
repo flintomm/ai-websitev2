@@ -836,6 +836,9 @@
           toggleVideoExpand();
           return;
         }
+        const tag = document.activeElement?.tagName;
+        const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable;
+        if (isTyping) return;
         if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
           e.preventDefault();
           if (currentSection < sections.length - 1) scrollToSection(currentSection + 1);
@@ -865,12 +868,14 @@
         if (event.ctrlKey) return;
         event.preventDefault();
         const scrollLimit = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
-        targetScrollY = Math.min(Math.max(targetScrollY + event.deltaY * 0.42, 0), scrollLimit);
+        const dpr = Math.max(window.devicePixelRatio || 1, 1);
+        const multiplier = event.deltaMode === 1 ? 28 : 0.42 * Math.sqrt(dpr);
+        targetScrollY = Math.min(Math.max(targetScrollY + event.deltaY * multiplier, 0), scrollLimit);
 
         if (dampenFrame) return;
         const animate = () => {
           const current = window.scrollY;
-          const next    = current + (targetScrollY - current) * 0.085;
+          const next    = current + (targetScrollY - current) * 0.12;
           if (Math.abs(targetScrollY - current) < 0.4) {
             window.scrollTo(0, targetScrollY);
             dampenFrame = null;
