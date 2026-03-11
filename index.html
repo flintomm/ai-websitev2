@@ -16,6 +16,8 @@
       --text: #fff;
       --muted: #666;
       --font: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --mobile-pad: clamp(0.9rem, 3.8vw, 1.2rem);
+      --touch-target: 44px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,6 +27,7 @@
       font-family: var(--font);
       background: var(--bg);
       overflow-x: hidden;
+      line-height: 1.45;
     }
 
     html { scroll-behavior: smooth; }
@@ -306,6 +309,7 @@
       justify-content: space-between;
       width: 100%;
       padding: 2.5rem 2rem;
+      min-height: 64px;
       color: #000;
       background: transparent;
       font-family: var(--font);
@@ -341,6 +345,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 1rem 2rem;
+      min-height: var(--touch-target);
       color: #fff;
       text-decoration: none;
       font-size: 0.75rem;
@@ -473,6 +478,7 @@
       border: none;
       cursor: pointer;
       padding: 0;
+      min-height: var(--touch-target);
       transition: color 0.15s;
     }
     .frame-back:hover { color: #fff; }
@@ -497,11 +503,33 @@
       .section { padding: 8vh 5vw; }
       .showcase { padding: 8vh 5vw; }
       .section-label { left: 5vw; }
+      .wordmark-name { letter-spacing: 0.2em; }
+      .wordmark-tag { letter-spacing: 0.12em; }
+      .showcase-title { margin-bottom: 2.25rem; }
+      .work-btn {
+        padding: 1rem 1rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.11em;
+      }
+      .work-dropdown-menu a {
+        padding: 0.8rem 1rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+      }
+      .frame-nav {
+        padding-left: calc(var(--mobile-pad) + env(safe-area-inset-left));
+        padding-right: calc(var(--mobile-pad) + env(safe-area-inset-right));
+      }
     }
 
     @media (max-width: 900px) {
       .section { min-height: 88svh; }
-      .site-wordmark { padding: 1rem 1.2rem; }
+      .site-wordmark {
+        padding-top: calc(0.9rem + env(safe-area-inset-top));
+        padding-bottom: 0.9rem;
+        padding-left: calc(var(--mobile-pad) + env(safe-area-inset-left));
+        padding-right: calc(var(--mobile-pad) + env(safe-area-inset-right));
+      }
       .wordmark-tag { letter-spacing: 0.14em; }
       .hero-video {
         width: 132px;
@@ -514,7 +542,7 @@
     }
 
     @media (max-height: 520px) and (orientation: landscape) {
-      .section { min-height: 120svh; padding: 7vh 6vw; }
+      .section { min-height: 104svh; padding: 5vh 5vw; }
       .site-wordmark { padding: 0.65rem 1rem; }
       .section-label { top: 1rem; }
       .scroll-hint { display: none; }

@@ -17,9 +17,11 @@
         --border: rgba(255,255,255,0.09);
         --border-hi: rgba(255,255,255,0.22);
         --text: #fff;
-        --muted: rgba(255,255,255,0.42);
+        --muted: rgba(255,255,255,0.56);
         --accent: #d90429;
         --font: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        --mobile-pad: clamp(0.9rem, 4vw, 1.15rem);
+        --touch-target: 44px;
       }
 
       * { box-sizing: border-box; }
@@ -42,6 +44,9 @@
       }
 
       .back-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--touch-target);
         font-size: 0.68rem;
         font-weight: 700;
         letter-spacing: 0.25em;
@@ -141,6 +146,7 @@
 
       .controls button {
         padding: 0.75rem 1rem;
+        min-height: var(--touch-target);
         border: 1px solid var(--border);
         background: rgba(255,255,255,0.05);
         color: var(--muted);
@@ -203,6 +209,7 @@
         border: 1px solid var(--border);
         border-left: 3px solid transparent;
         padding: 0.75rem;
+        min-height: 56px;
         display: grid;
         gap: 0.3rem;
         text-align: left;
@@ -337,14 +344,22 @@
       @media (max-width: 760px) {
         .site-nav { padding: 0.85rem 1rem; }
         .site-tag { letter-spacing: 0.16em; }
-        body > header { padding: 1.1rem 1rem 0.9rem; gap: 0.9rem; }
+        body > header { padding: 1rem var(--mobile-pad) 0.75rem; gap: 0.75rem; }
         h1 { font-size: clamp(1.5rem, 8.5vw, 1.95rem); }
-        p { font-size: 0.78rem; line-height: 1.5; }
-        .tech-strip { padding: 0.45rem 1rem; gap: 0.3rem; }
+        p { font-size: 0.76rem; line-height: 1.45; }
+        .tech-strip { padding: 0.42rem var(--mobile-pad); gap: 0.3rem; }
         .tech-strip span { font-size: 0.56rem; }
-        main { padding: 0.85rem 1rem 1.2rem; gap: 0.9rem; }
-        .panel { padding: 1rem; }
-        .hud-bar { top: 8px; left: 8px; right: 8px; gap: 0.3rem; }
+        main { padding: 0.8rem var(--mobile-pad) 1.1rem; gap: 0.8rem; }
+        .panel { padding: 0.9rem; }
+        .arena { display: grid; gap: 0.5rem; }
+        .hud-bar {
+          position: static;
+          top: auto;
+          left: auto;
+          right: auto;
+          justify-content: flex-start;
+          gap: 0.35rem;
+        }
         .chip {
           min-width: 58px;
           padding: 0.28rem 0.45rem;
@@ -371,7 +386,15 @@
           padding: 0.7rem 0.95rem 1rem;
           gap: 0.75rem;
         }
-        .panel { padding: 0.85rem; }
+        .panel { padding: 0.75rem; }
+        .hud-bar {
+          position: static;
+          top: auto;
+          left: auto;
+          right: auto;
+          justify-content: flex-start;
+          gap: 0.35rem;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {

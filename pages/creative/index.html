@@ -14,9 +14,11 @@
         --border: rgba(255,255,255,0.09);
         --border-hi: rgba(255,255,255,0.22);
         --text: #fff;
-        --muted: rgba(255,255,255,0.42);
+        --muted: rgba(255,255,255,0.56);
         --accent: #d90429;
         --font: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        --mobile-pad: clamp(0.9rem, 4vw, 1.15rem);
+        --touch-target: 44px;
       }
 
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,6 +40,9 @@
       }
 
       .back-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--touch-target);
         font-size: 0.68rem;
         font-weight: 700;
         letter-spacing: 0.25em;
@@ -89,6 +94,7 @@
       .project-card {
         background: var(--surface);
         border: 1px solid var(--border);
+        border-radius: 10px;
         padding: 1.5rem;
         display: flex;
         flex-direction: column;
@@ -143,6 +149,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
+        min-height: var(--touch-target);
         font-size: 0.68rem;
         font-weight: 700;
         letter-spacing: 0.18em;
@@ -164,18 +171,25 @@
       }
 
       @media (max-width: 600px) {
-        .site-nav { padding: 1rem 1.2rem; }
-        body > header { padding: 1.5rem 1.2rem 1rem; }
-        .site-tag { letter-spacing: 0.16em; }
-        body > header h1 { font-size: clamp(1.6rem, 9vw, 2rem); }
-        main {
-          padding: 1rem 1.2rem;
-          grid-template-columns: 1fr;
-          gap: 0.8rem;
+        .site-nav {
+          padding: 0.85rem var(--mobile-pad);
+          gap: 0.65rem;
         }
-        .project-card { padding: 1rem; }
+        body > header { padding: 1.1rem var(--mobile-pad) 0.85rem; }
+        .site-tag { letter-spacing: 0.16em; }
+        body > header h1 { font-size: clamp(1.45rem, 8.2vw, 1.9rem); }
+        .header-sub { font-size: 0.74rem; line-height: 1.5; letter-spacing: 0.05em; }
+        main {
+          padding: 0.9rem var(--mobile-pad) 1.1rem;
+          grid-template-columns: 1fr;
+          gap: 0.72rem;
+        }
+        .project-card {
+          padding: 0.95rem;
+          gap: 0.62rem;
+        }
         .card-title { font-size: 0.82rem; }
-        .card-desc { font-size: 0.76rem; }
+        .card-desc { font-size: 0.74rem; line-height: 1.5; }
       }
 
       @media (max-height: 540px) and (orientation: landscape) {

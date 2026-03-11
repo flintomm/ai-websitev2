@@ -6,6 +6,7 @@
   --cb-muted: rgba(255, 255, 255, 0.64);
   --cb-accent: #d90429;
   --cb-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+  --cb-touch-target: 44px;
 }
 
 .flint-chat-launcher {
@@ -17,6 +18,7 @@
   background: #fff;
   color: #000;
   padding: 0.62rem 0.9rem;
+  min-height: var(--cb-touch-target);
   font: 700 0.68rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -70,8 +72,8 @@
   border: 1px solid var(--cb-border);
   background: transparent;
   color: var(--cb-text);
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   cursor: pointer;
 }
 
@@ -149,6 +151,7 @@
   background: #fff;
   color: #000;
   padding: 0.58rem 0.62rem;
+  min-height: var(--cb-touch-target);
   font: 400 0.86rem/1.3 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -165,6 +168,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 0 0.95rem;
+  min-height: var(--cb-touch-target);
   cursor: pointer;
 }
 
@@ -193,10 +197,23 @@
     bottom: 3.3rem;
     height: min(74vh, 560px);
   }
+  .flint-chat-head { padding: 0.55rem 0.6rem; }
+  .flint-chat-title { letter-spacing: 0.11em; }
+  .flint-chat-row { gap: 0.35rem; }
+  .flint-chat-send { padding: 0 0.8rem; }
 
   .flint-chat-bubble.user,
   .flint-chat-bubble.assistant {
     margin-left: 0;
     margin-right: 0;
   }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .flint-chat-panel {
+    height: min(82vh, 420px);
+    bottom: 2.9rem;
+  }
+  .flint-chat-messages { padding: 0.55rem; }
+  .flint-chat-form { padding: 0.5rem; }
 }

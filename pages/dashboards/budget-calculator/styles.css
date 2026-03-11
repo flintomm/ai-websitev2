@@ -14,6 +14,8 @@
   --neutral:     #888;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --sans: "Space Grotesk", "Segoe UI", sans-serif;
+  --touch-target: 44px;
+  --mobile-pad: clamp(0.9rem, 4vw, 1.15rem);
 }
 
 /* ─── Base Reset ─────────────────────────────────────────────── */
@@ -43,6 +45,9 @@ body {
 
 .back-link {
   text-decoration: none; color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
   font-family: var(--mono); font-size: 0.58rem;
   text-transform: uppercase; letter-spacing: 0.2em;
   transition: color 0.1s;
@@ -230,6 +235,7 @@ input, select {
   width: 100%;
   background: var(--surface-2); border: 1px solid var(--line);
   color: var(--text); padding: 0.36rem 0.46rem;
+  min-height: var(--touch-target);
   font-family: var(--mono);
 }
 
@@ -243,6 +249,7 @@ input:focus, select:focus {
 .btn {
   border: 1.5px solid var(--accent); background: var(--accent); color: #0c0c0c;
   padding: 0.36rem 0.65rem;
+  min-height: var(--touch-target);
   font-family: var(--mono); font-size: 0.58rem; font-weight: 700;
   letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer;
@@ -441,7 +448,7 @@ tr.row-new { animation: rowEnter 170ms ease-out forwards; }
 }
 
 @media (max-width: 720px) {
-  .site-nav, .tech-strip, .flow-strip { padding-left: 0.8rem; padding-right: 0.8rem; }
+  .site-nav, .tech-strip, .flow-strip { padding-left: var(--mobile-pad); padding-right: var(--mobile-pad); }
   header, main { width: 97vw; }
   .fields.two-col, .fields.three-col,
   .stats.four, .stats.two { grid-template-columns: 1fr; }
@@ -452,8 +459,9 @@ tr.row-new { animation: rowEnter 170ms ease-out forwards; }
   .card { padding: 0.52rem; box-shadow: 2px 2px 0 var(--accent-dim); }
   .card-head { gap: 0.3rem; }
   .card-head h2 { font-size: 0.6rem; }
-  .btn { width: 100%; justify-content: center; }
+  .btn { width: 100%; justify-content: center; letter-spacing: 0.08em; }
   .table-wrap.compact { max-height: 170px; }
+  .tech-strip span, .flow-strip span { letter-spacing: 0.06em; }
 }
 
 @media (max-height: 540px) and (orientation: landscape) {
